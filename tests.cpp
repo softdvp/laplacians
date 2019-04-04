@@ -36,8 +36,7 @@ void IJVtests() {
 
 	// A sample of  matrix taken from 
 	// https://en.wikipedia.org/wiki/Sparse_matrix
-	CompressedMatrix<int> m{ {0,0,0,0}, {5,8,0,0}, {0,0,3,0}, {0,6,0,0} };
-
+	CompressedMatrix<int, blaze::columnMajor> m{ {0,0,0,0}, {5,8,0,0}, {0,0,3,0}, {0,6,0,0} };
 	IJV<int> ijv(m);
 
 	std::cout << "ijv.i= ";
@@ -55,9 +54,15 @@ void IJVtests() {
 
 	std::cout << "\n" << "nnz= "<<nnz(ijv);
 
-	//Out: jvi.i= 0 0 2 3 4
+	//Out: jvi.i= 0 0 2 3 4 
+	//     for row major matrix:
 	//	   ijv.j= 0 1 2 1
 	//	   ijv.v= 5 8 3 6	
 	//     nnz= 4
+
+	// for column major (default) matrix:
+	// ijv.i= 0 1 3 4 4
+	// ijv.j= 1 1 3 2
+	// ijv.v= 5 8 6 3
 
 }

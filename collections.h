@@ -13,7 +13,36 @@ public:
 	DynamicVector<std::size_t> j; //rowval
 	DynamicVector<Tv> v; //nonzero elements
 
-	IJV(CompressedMatrix<Tv> &mat) {
+	IJV(const IJV &a) {
+		n = a.n;
+		nnz = a.nnz;
+		i = a.i;
+		j = a.j;
+		v = a.v;
+	}
+
+	IJV(const std::size_t  an,	const std::size_t annz,
+	const DynamicVector<std::size_t> ai,
+	const DynamicVector<std::size_t> aj,
+	const DynamicVector<Tv> av) {
+		n = an;
+		nnz = annz;
+		i = ai;
+		j = aj;
+		v = av;
+	}
+
+	IJV& operator=(const IJV &a) {
+		n = a.n;
+		nnz = a.nnz;
+		i = a.i;
+		j = a.j;
+		v = a.v;
+
+		return *this;
+	}
+	
+	IJV(CompressedMatrix<Tv, blaze::columnMajor> &mat) {
 
 		n = mat.rows();
 		nnz = mat.nonZeros();
@@ -25,7 +54,7 @@ public:
 		j.resize(nnz);
 		v.resize(nnz);
 
-		std::size_t k = 0;
+		std::size_t k = 0; 
 
 		//Fill i, j and v
 		
@@ -34,7 +63,7 @@ public:
 		for (size_t l = 0UL; l < mat.rows(); ++l) {
 			std::size_t rownz = 0;
 
-			for (typename CompressedMatrix<Tv>::Iterator it = mat.begin(l); it != mat.end(l); ++it) {
+			for (typename CompressedMatrix<Tv, blaze::columnMajor>::Iterator it = mat.begin(l); it != mat.end(l); ++it) {
 				
 				 v[k]= it->value();  
 				 j[k]= it->index();  
