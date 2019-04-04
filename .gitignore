@@ -1,0 +1,6 @@
+.vs
+debug
+*.vc*
+*.exe
+Debug\
+x64\
