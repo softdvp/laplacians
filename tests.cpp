@@ -1,4 +1,3 @@
-#include "pch.h"
 #include <iostream>
 #include <blaze/Math.h>
 #include "pcg_1.h"
@@ -37,7 +36,7 @@ void IJVtests() {
 	// A sample of  matrix taken from 
 	// https://en.wikipedia.org/wiki/Sparse_matrix
 	CompressedMatrix<int, blaze::columnMajor> m{ {0,0,0,0}, {5,8,0,0}, {0,0,3,0}, {0,6,0,0} };
-	IJV<int> ijv(m);
+	IJV<int> ijv(m), ijv1;
 
 	std::cout << "ijv.i= ";
 
@@ -65,6 +64,62 @@ void IJVtests() {
 	// ijv.j= 1 1 3 2
 	// ijv.v= 5 8 6 3
 	// nnz= 4
+
+	std::cout << "\n";
+
+	CompressedMatrix<int, blaze::columnMajor> newm = sparse(ijv);
+
+	std::cout << "\n Original matrix:\n "<< m <<"\n";
+	std::cout << "\n Matrix after convertions:\n " << newm << "\n";
+
+	std::cout << std::endl;
+
+	std::cout << "Test overloaded operators.";
+
+	ijv1 = ijv;
+
+	std::cout << "operator= :\n";
+
+	std::cout << "ijv1.i= ";
+
+	for (std::size_t k = 0; k <= ijv1.n; ++k)
+		std::cout << ijv1.i[k] << " ";
+
+	std::cout << "\n" << "ijv1.j= ";
+	for (std::size_t k = 0; k < ijv1.nnz; ++k)
+		std::cout << ijv1.j[k] << " ";
+
+	std::cout << "\n" << "ijv1.v= ";
+	for (std::size_t k = 0; k < ijv1.nnz; ++k)
+		std::cout << ijv1.v[k] << " ";
+
+	std::cout << "\n" << "nnz= " << nnz(ijv1);
+
+	bool t = ijv1 == ijv;
+	std::cout << "\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
+
+	//Change ijv1
+	ijv1.v[0] = 10;
+
+	t = ijv1 == ijv;
+	std::cout << "\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
+
+	std::cout << "\noperator* :\n ijv*5";
+
+	ijv1 = ijv*5;
+
+	std::cout << "\n" << "ijv1.v= ";
+	for (std::size_t k = 0; k < ijv1.nnz; ++k)
+		std::cout << ijv1.v[k] << " ";
+
+	std::cout << "\noperator* :\n ijv*5";
+
+	ijv1 = 5 * ijv;
+
+	std::cout << "\n" << "ijv1.v= ";
+	for (std::size_t k = 0; k < ijv1.nnz; ++k)
+		std::cout << ijv1.v[k] << " ";
+
 
 
 }

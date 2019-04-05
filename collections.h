@@ -1,6 +1,8 @@
 #pragma once
 #include <blaze/Math.h>
 #include <iostream>
+#include <boost/container_hash/hash.hpp>
+
 using blaze::DynamicVector;
 using blaze::CompressedMatrix;
 
@@ -13,15 +15,24 @@ public:
 	DynamicVector<std::size_t> j; //rowval
 	DynamicVector<Tv> v; //nonzero elements
 
-	bool operator== (const IJV b) {
-		return n == b.n &&
-			nnz == b.nnz &&
-			i == b.i &&
-			j == b.j &&
-			v == b.v;
+	IJV():n(0), nnz(0), i(0), j(0), v(0){}
+
+	const IJV operator+(const IJV b) const {
+		IJV m;
+		m.n = n;
+		m.nnz = nnz + b.nnz;
+
+		return m;
+	}
+		
+	const bool operator== (const IJV b) const
+	{
+		bool res = n == b.n &&	nnz == b.nnz &&	i == b.i &&	j == b.j &&	v == b.v;
+		return res;
 	}
 
-	IJV operator* (const Tv x) {
+	const IJV operator* (const Tv x) const
+	{
 		IJV m;
 
 		m.n = n;
@@ -30,7 +41,7 @@ public:
 		m.j = j;
 		m.v = v * x;
 
-		return IJV;
+		return m;
 	}
 
 	IJV(const IJV &a) {
@@ -52,7 +63,7 @@ public:
 		v = av;
 	}
 
-	IJV& operator=(const IJV &a) {
+	const IJV& operator=(const IJV &a) {
 		n = a.n;
 		nnz = a.nnz;
 		i = a.i;
@@ -76,7 +87,7 @@ public:
 
 		std::size_t k = 0; 
 
-		//Fill i, j and v
+		//Fill i, row and v
 		
 		std::size_t totalnz = 0;
 
@@ -97,11 +108,38 @@ public:
 };
 
 template <typename Tv>
-std::size_t nnz(const IJV<Tv> &a) {
+const std::size_t nnz(const IJV<Tv> &a) {
 	return a.nnz;
 }
 
-template <typename Tv>
-CompressedMatrix<Tv, blaze::columnMajor> sparse(const IJV<Tv>) {
+ template <typename Tv>
+CompressedMatrix<Tv, blaze::columnMajor> sparse(const IJV<Tv> &ijv) {
+	CompressedMatrix<Tv, blaze::columnMajor>res(ijv.n, ijv.n);
+	res.reserve(ijv.nnz);       
+	for (size_t i = 0; i != ijv.n; i++) {
+		size_t colbegin = ijv.i[i];
+		size_t colend = ijv.i[i + 1];
 
+		for (size_t row = colbegin; row != colend; row++) {
+			size_t rowv = ijv.j[row]; 
+			Tv v = ijv.v[row];
+			res.append(rowv, i, v); 
+		}
+		res.finalize(i);      
+	}
+	return res;
 }
+
+template <typename Tv>
+IJV<Tv> operator* (const Tv x, const IJV<Tv> ijv) {
+
+	return ijv*x;
+}
+
+/*template <typename Tv>
+size_t hash(IJV<Tv> a) {
+
+	return
+}*/
+/*hash(a::IJV) =
+hash((a.n, a.nnz, a.i, a.j, a.v), hash(IJV))*/
