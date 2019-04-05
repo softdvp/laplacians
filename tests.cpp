@@ -64,5 +64,7 @@ void IJVtests() {
 	// ijv.i= 0 1 3 4 4
 	// ijv.j= 1 1 3 2
 	// ijv.v= 5 8 6 3
+	// nnz= 4
+
 
 }

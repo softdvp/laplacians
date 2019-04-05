@@ -13,6 +13,26 @@ public:
 	DynamicVector<std::size_t> j; //rowval
 	DynamicVector<Tv> v; //nonzero elements
 
+	bool operator== (const IJV b) {
+		return n == b.n &&
+			nnz == b.nnz &&
+			i == b.i &&
+			j == b.j &&
+			v == b.v;
+	}
+
+	IJV operator* (const Tv x) {
+		IJV m;
+
+		m.n = n;
+		m.nnz = nnz;
+		m.i = i;
+		m.j = j;
+		m.v = v * x;
+
+		return IJV;
+	}
+
 	IJV(const IJV &a) {
 		n = a.n;
 		nnz = a.nnz;
@@ -74,24 +94,14 @@ public:
 			i[l+1] = totalnz;
 		}
 	}
-	/*== (a::IJV, b::IJV) =
-		a.n == b.n &&
-		a.nnz == b.nnz &&
-		a.i == b.i &&
-		a.j == b.j &&
-		a.v == b.v*/
-
-	/*function *(a::IJV, x::Number)
-		ijv = deepcopy(a)
-		ijv.v .* = x
-
-		return ijv
-		end
-		*/
-
 };
 
 template <typename Tv>
 std::size_t nnz(const IJV<Tv> &a) {
 	return a.nnz;
+}
+
+template <typename Tv>
+CompressedMatrix<Tv, blaze::columnMajor> sparse(const IJV<Tv>) {
+
 }

@@ -1,0 +1,24 @@
+include("pcg_1.jl")
+include("collection.jl")
+
+#bzbeta! test
+a=[ 1., 2., 3., 4.]
+b=[5., 4., 0., 1.]
+bzbeta!(2.3, a, b)
+println(a)
+
+#axpy2! test
+a=[ 1, 2, 3, 4 ]
+b=[5, 4, 0, 1]
+
+axpy2!(4, a, b)
+println(b)
+
+#
+using SparseArrays
+m=[0 0 0 0; 5 8 0 0; 0 0 3 0; 0 6 0 0]
+
+sp_m=SparseMatrixCSC(m)
+
+ijv=IJV(sp_m)
+dump(ijv)
