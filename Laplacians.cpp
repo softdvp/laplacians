@@ -13,5 +13,7 @@ int main()
 	axpy2test();*/
 
 	IJVtests();
+
+	CollectionTest();
 }
 
