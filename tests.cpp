@@ -231,10 +231,61 @@ void IJVtests() {
 }
 
 void CollectionTest() {
-	CompressedMatrix<int> m;
+	CompressedMatrix<int> m, m1;
+
+	//Test path_graph_ijv
 
 	IJV<int> ijv = path_graph_ijv<int>(5);
 
 	dump_ijv(0, ijv);
-	cout << endl<<endl<< ijv.toCompressedMatrix();
+	m1 = ijv.toCompressedMatrix();
+	cout << endl << endl << m1 << endl;
+
+	//Test testZeroDiag
+	assert(testZeroDiag(m1));
+
+	//Add non zero to a diagonal cell
+	m1(2, 2) = 1;
+
+	assert(!testZeroDiag(m1));
+
+	// Test connections()
+	CompressedMatrix<int, blaze::columnMajor> m10(10,10);
+	m10(1, 0) = 1;	m10(2, 0) = 1;	m10(0, 1) = 1;	m10(5, 1) = 1;	m10(8, 1) = 1;
+	m10(0, 2) = 1;	m10(5, 3) = 1;	m10(7, 4) = 1;	m10(1, 5) = 1;	m10(3, 5) = 1;
+	m10(8, 5) = 1;	m10(4, 7) = 1;	m10(8, 7) = 1;	m10(1, 8) = 1;	m10(5, 8) = 1;
+	m10(7, 8) = 1;
+
+	SparseMatrixCSC<int> sprs(m10);
+	vector<size_t> comp = components(sprs);
+	
+	for (int i = 0; i < comp.size(); i++)
+		cout << comp[i] << " ";
+
+	cout << endl << endl;
+	cout << "Call of componets():\n";
+
+	vector<size_t>comp1 = components(m10);
+
+	for (int i = 0; i < comp1.size(); i++)
+		cout << comp[i] << " ";
+
+	assert(comp == comp1);
+
+	cout << endl << endl;
+	
+	//Test Kronecker product function kron(A, B)
+
+	CompressedMatrix<int, blaze::columnMajor> A(2,2), B(2,2), Res;
+
+	//Create two occasional matrices
+	//See an example at https://en.wikipedia.org/wiki/Kronecker_product
+
+	A(0, 0) = 1; A(0, 1) = 2; A(1, 0) = 3; A(1, 1) = 4;
+	B(0, 0) = 0; B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
+
+
+	Res = kron(A, B);
+	cout << "kron(A, B)=\n" << Res;
+	
 }

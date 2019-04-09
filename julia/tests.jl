@@ -19,7 +19,7 @@ println(b)
 
 m=[0 0 0 0; 5 8 0 0; 0 0 3 0; 0 6 0 0]
 
-sp_m=SparseMatrixCSC(m) 
+sp_m=SparseMatrixCSC(m)
 
 ijv=IJV(sp_m)
 dump(ijv)
@@ -40,9 +40,20 @@ sp_m2=SparseMatrixCSC(m2)
 ijv2=IJV(sp_m2)
 dump(ijv2)
 
-"""
+
 #path_graph_ijv
 
 n=5
 IJV(n, 2*(n-1), [collect(1:(n-1)) ; collect(2:n)],
         [collect(2:n); collect(1:(n-1))], ones(2*(n-1)))
+
+"""
+
+A=SparseMatrixCSC{Int};
+B=SparseMatrixCSC{Int};
+A[1, 1] = 1; A[1, 2] = 4; A[1, 3] = 3; A[2, 1] = 2; A[2, 2] = 1;
+B[1, 1] = 5; B[1, 3] = 1; B[2, 1] = 7; B[2,2] = 2; B[3, 1] = 3; B[3, 3] = 1;
+
+println(A)
+
+println(B)
