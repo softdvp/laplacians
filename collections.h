@@ -46,7 +46,7 @@ public:
 		for (size_t l = 0UL; l < mat.rows(); ++l) {
 			std::size_t rownz = 0;
 
-			for (typename CompressedMatrix<Tv, blaze::columnMajor>::Iterator it = mat.begin(l); it != mat.end(l); ++it) {
+			for (typename CompressedMatrix<Tv, blaze::columnMajor>::ConstIterator it = mat.cbegin(l); it != mat.cend(l); ++it) {
 
 				nzval[k] = it->value();
 				rowval[k] = it->index();
@@ -108,12 +108,6 @@ public:
 		bool res = n == b.n &&	nnz == b.nnz &&	i == b.i &&	j == b.j &&	v == b.v;
 		return res;
 	}
-
-	/*const IJV operator+ (const Tv x) const {
-		IJV m;
-
-		return m;
-	}*/
 
 	const IJV operator* (const Tv x) const
 	{
@@ -220,165 +214,12 @@ public:
 
 		return res;
 	}
-
 };
 
 template <typename Tv>
 IJV<Tv> operator* (const Tv x, const IJV<Tv> &ijv) {
 
 	return ijv * x;
-}
-
-
-template <typename Tv>
-const std::size_t nnz(const IJV<Tv> &a) {
-	return a.nnz;
-}
-
-//sparse:  convert IJV to SparseMatrixCSC
- template <typename Tv>
- SparseMatrixCSC<Tv> sparse(const IJV<Tv> &ijv) {
-	 SparseMatrixCSC<Tv>res;
-	 res.m = ijv.n;
-	 res.n = res.m;
-
-	 size_t nnz = ijv.nnz;
-
-	 res.colptr.resize(res.n + 1);
-	 res.rowval.resize(nnz);
-	 res.nzval.resize(nnz);
-
-	 res.colptr[0] = 0;
-	 res.colptr[res.n] = nnz;
-
-	 size_t k = 0;
-
-	 //Fill colptr, rowval and nzval
-
-	 std::size_t totalnz = 0, t=0;
-
-	 for (size_t l = 0UL; l < res.n; ++l) {
-		 std::size_t rownz = 0;
-		 
-		 while(t < nnz && l==ijv.j[t]) {
-
-			 res.nzval[k] = ijv.v[t];
-			 res.rowval[k] = ijv.i[t];
-			 ++k;
-			 ++rownz;
-			 ++t;
-		 }
-		 totalnz += rownz;
-		 res.colptr[l + 1] = totalnz;
-	 }
-
-	 return res;
-}
-
-
-template <typename Tv>
-size_t hashijv(const IJV<Tv> &a) {
-	size_t seed = boost::hash_range(begin(a.v), end(a.v));
-	size_t seed1 = boost::hash_range(begin(a.i), end(a.i));
-	size_t seed2 = boost::hash_range(begin(a.j), end(a.j));
-
-	boost::hash_combine(seed, seed1);
-	boost::hash_combine(seed, seed2);
-	boost::hash_combine(seed, a.n);
-	boost::hash_combine(seed, a.nnz);
-		
-	return seed;
-}
-
-template <typename Tv>
-size_t hashijv(const IJV<Tv> &a, const unsigned h){
-	size_t seed = hashijv(a);
-	boost::hash_combine(seed, h);
-	return seed;
-}
-
-template <typename Tv>
-IJV<Tv> compress(const IJV<Tv> &ijv) {
-	return IJV<Tv>(sparse(ijv));
-}
-
-template <typename Tv>
-IJV<Tv> transpose(const IJV<Tv> &ijv) {
-	return IJV<Tv>(ijv.n, ijv.nnz, ijv.j, ijv.i, ijv.v);
-}
-
-// Retutns vector where comp[i]=component number
-template <typename Tv>
-vector<size_t> components(CompressedMatrix<Tv, blaze::columnMajor> &mat) {
-	size_t n = mat.rows();
-
-	vector<size_t> order(n);
-	vector<size_t> comp(n);
-
-	size_t color = 0;
-
-	for (size_t x = 0UL; x < mat.rows(); ++x) {
-		if (!comp[x]) { //not used
-			comp[x] = ++color; //insert new color
-
-			if (mat.begin(x) !=mat.end(x)) {
-				size_t ptr = 0, orderLen = 1;
-				order[ptr] = x;
-
-				while (ptr < orderLen) {
-					size_t curNode = order[ptr]; // initial curNode=x
-
-					for (auto it = mat.begin(curNode); it != mat.end(curNode); ++it) {
-						size_t nbr = it->index();
-						if (!comp[nbr]) { //not used
-							comp[nbr] = color; // insert current component
-							order[orderLen] = nbr;
-							++orderLen;
-						}
-					}
-					++ptr;
-				}
-			}
-		}
-	}
-	return comp;
-}
-
-template <typename Tv>
-vector<size_t> components(const SparseMatrixCSC<Tv> &mat) {
-	size_t n = mat.n;
-
-	vector<size_t> order(n);
-	vector<size_t> comp(n);
-
-	size_t color = 0;
-	
-	for (size_t x = 0; x != n; x++) {
-		if (!comp[x]) { //not used
-			comp[x] = ++color; //insert new color
-
-			if (mat.colptr[x + 1] > mat.colptr[x]) {
-				size_t ptr = 0,	orderLen = 1;
-
-				order[ptr] = x;
-
-				while (ptr < orderLen) {
-					size_t curNode = order[ptr]; // initial curNode=x
-
-					for (size_t ind = mat.colptr[curNode]; ind != mat.colptr[curNode + 1]; ++ind) { // cycle by rows
-						size_t nbr = mat.rowval[ind]; //nbr=row
-						if (!comp[nbr]) { //not used
-							comp[nbr] = color; // insert current component
-							order[orderLen] = nbr;
-							++orderLen;
-						}
-					}
-					++ptr;
-				}
-			}
-		}
-	}
-	return comp;
 }
 
 template <typename Tv>
@@ -394,66 +235,271 @@ bool testZeroDiag(const Tv &a) {
 	return true;
 }
 
+
 template <typename Tv>
-IJV<Tv> path_graph_ijv(int n) {
-	IJV<Tv> ijv;
-	ijv.n = n;
-	ijv.nnz = 2 * (n - 1);
+class Laplacians {
+public:
 
-	ijv.i.resize(ijv.nnz);
-	ijv.j.resize(ijv.nnz);
-	ijv.v.resize(ijv.nnz);
-
-	size_t z = 0;
-
-	for (size_t i = 0; i < ijv.n; i++) {
-		long long k = i - 1;
-		size_t l = i + 1;
-		if (k >= 0) {
-			ijv.i[z] = i;
-			ijv.j[z] = k;
-			ijv.v[z] = 1;
-			++z;
-		}
-
-		if (l < n) {
-			ijv.i[z] = i;
-			ijv.j[z] = l;
-			ijv.v[z] = 1;
-			++z;
-		}
+	const std::size_t nnz(const IJV<Tv> &a) {
+		return a.nnz;
 	}
-	return ijv;
-}
 
-//Kronecker product
-//https://en.wikipedia.org/wiki/Kronecker_product
+	//sparse:  convert IJV to SparseMatrixCSC
+	SparseMatrixCSC<Tv> sparse(const IJV<Tv> &ijv) {
+		SparseMatrixCSC<Tv>res;
+		res.m = ijv.n;
+		res.n = res.m;
 
-template <typename Tv>
-CompressedMatrix<Tv, blaze::columnMajor>kron(const CompressedMatrix<Tv,
-	blaze::columnMajor> &A, const CompressedMatrix<Tv, blaze::columnMajor> &B) {
-	CompressedMatrix<Tv, blaze::columnMajor> Res(A.rows() * B.rows(), A.columns() * B.columns());
+		size_t nnz = ijv.nnz;
 
-	for (size_t i = 0; i < A.rows(); i++)
-		for (size_t j=0; j<A.columns(); j++){
-		auto sbm=submatrix(Res, i*B.rows(), j*B.columns(), B.rows(), B.columns());
+		res.colptr.resize(res.n + 1);
+		res.rowval.resize(nnz);
+		res.nzval.resize(nnz);
+
+		res.colptr[0] = 0;
+		res.colptr[res.n] = nnz;
+
+		size_t k = 0;
+
+		//Fill colptr, rowval and nzval
+
+		std::size_t totalnz = 0, t = 0;
+
+		for (size_t l = 0UL; l < res.n; ++l) {
+			std::size_t rownz = 0;
+
+			while (t < nnz && l == ijv.j[t]) {
+
+				res.nzval[k] = ijv.v[t];
+				res.rowval[k] = ijv.i[t];
+				++k;
+				++rownz;
+				++t;
+			}
+			totalnz += rownz;
+			res.colptr[l + 1] = totalnz;
+		}
+
+		return res;
+	}
+
+
+	size_t hashijv(const IJV<Tv> &a) {
+		size_t seed = boost::hash_range(begin(a.v), end(a.v));
+		size_t seed1 = boost::hash_range(begin(a.i), end(a.i));
+		size_t seed2 = boost::hash_range(begin(a.j), end(a.j));
+
+		boost::hash_combine(seed, seed1);
+		boost::hash_combine(seed, seed2);
+		boost::hash_combine(seed, a.n);
+		boost::hash_combine(seed, a.nnz);
+
+		return seed;
+	}
+
+	size_t hashijv(const IJV<Tv> &a, const unsigned h) {
+		size_t seed = hashijv(a);
+		boost::hash_combine(seed, h);
+		return seed;
+	}
+
+	IJV<Tv> compress(const IJV<Tv> &ijv) {
+		return IJV<Tv>(sparse(ijv));
+	}
+
+	IJV<Tv> transpose(const IJV<Tv> &ijv) {
+		return IJV<Tv>(ijv.n, ijv.nnz, ijv.j, ijv.i, ijv.v);
+	}
+
+	// Retutns vector where comp[i]=component number
+	vector<size_t> components(CompressedMatrix<Tv, blaze::columnMajor> &mat) {
+		size_t n = mat.rows();
+
+		vector<size_t> order(n);
+		vector<size_t> comp(n);
+
+		size_t color = 0;
+
+		for (size_t x = 0UL; x < mat.rows(); ++x) {
+			if (!comp[x]) { //not used
+				comp[x] = ++color; //insert new color
+
+				if (mat.begin(x) != mat.end(x)) {
+					size_t ptr = 0, orderLen = 1;
+					order[ptr] = x;
+
+					while (ptr < orderLen) {
+						size_t curNode = order[ptr]; // initial curNode=x
+
+						for (auto it = mat.begin(curNode); it != mat.end(curNode); ++it) {
+							size_t nbr = it->index();
+							if (!comp[nbr]) { //not used
+								comp[nbr] = color; // insert current component
+								order[orderLen] = nbr;
+								++orderLen;
+							}
+						}
+						++ptr;
+					}
+				}
+			}
+		}
+		return comp;
+	}
+
+	vector<size_t> components(const SparseMatrixCSC<Tv> &mat) {
+		size_t n = mat.n;
+
+		vector<size_t> order(n);
+		vector<size_t> comp(n);
+
+		size_t color = 0;
+
+		for (size_t x = 0; x != n; x++) {
+			if (!comp[x]) { //not used
+				comp[x] = ++color; //insert new color
+
+				if (mat.colptr[x + 1] > mat.colptr[x]) {
+					size_t ptr = 0, orderLen = 1;
+
+					order[ptr] = x;
+
+					while (ptr < orderLen) {
+						size_t curNode = order[ptr]; // initial curNode=x
+
+						for (size_t ind = mat.colptr[curNode]; ind != mat.colptr[curNode + 1]; ++ind) { // cycle by rows
+							size_t nbr = mat.rowval[ind]; //nbr=row
+							if (!comp[nbr]) { //not used
+								comp[nbr] = color; // insert current component
+								order[orderLen] = nbr;
+								++orderLen;
+							}
+						}
+						++ptr;
+					}
+				}
+			}
+		}
+		return comp;
+	}
+
+	IJV<Tv> path_graph_ijv(int n) {
+		IJV<Tv> ijv;
+		ijv.n = n;
+		ijv.nnz = 2 * (n - 1);
+
+		ijv.i.resize(ijv.nnz);
+		ijv.j.resize(ijv.nnz);
+		ijv.v.resize(ijv.nnz);
+
+		size_t z = 0;
+
+		for (size_t i = 0; i < ijv.n; i++) {
+			long long k = i - 1;
+			size_t l = i + 1;
+			if (k >= 0) {
+				ijv.i[z] = i;
+				ijv.j[z] = k;
+				ijv.v[z] = 1;
+				++z;
+			}
+
+			if (l < n) {
+				ijv.i[z] = i;
+				ijv.j[z] = l;
+				ijv.v[z] = 1;
+				++z;
+			}
+		}
+		return ijv;
+	}
+
+	//Kronecker product
+	//https://en.wikipedia.org/wiki/Kronecker_product
+
+	CompressedMatrix<Tv, blaze::columnMajor>kron(const CompressedMatrix<Tv,
+		blaze::columnMajor> &A, const CompressedMatrix<Tv, blaze::columnMajor> &B) {
+		CompressedMatrix<Tv, blaze::columnMajor> Res(A.rows() * B.rows(), A.columns() * B.columns());
+
+		for (size_t i = 0; i < A.rows(); i++)
+			for (auto it = A.cbegin(i); it != A.cend(i); ++it){
+				size_t j = it->index();
+				auto sbm = submatrix(Res, i*B.rows(), j*B.columns(), B.rows(), B.columns());
+
+				sbm = A(i, j) * B;
+			}
+
+		return Res;
+	}
+
+	//Conjugate transpose
+	CompressedMatrix<Tv, blaze::columnMajor>adjoint(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
+		CompressedMatrix<Tv, blaze::columnMajor> Res=blaze::ctrans(A);
+
+		return Res;
+	}
+
+	vector<size_t> flipIndex(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
+		CompressedMatrix<size_t, blaze::columnMajor>B(A.rows(), A.columns());
+
+		size_t k = 1; 
+
+		for (size_t i = 0; i < A.rows(); i++)
+			for (auto it = A.cbegin(i); it != A.cend(i); ++it) {
+				size_t j = it->index();
+				B(i, j) = k;
+				++k;
+			}
 		
-		sbm = A(i, j) * B;
+		CompressedMatrix<size_t, blaze::columnMajor> bakMat = ctrans(B);
+		
+		vector<size_t> resv;
+		for (size_t i = 0; i < B.rows(); i++)
+			for (auto it = B.cbegin(i); it != B.cend(i); ++it) {
+				size_t v = it->value();
+
+				resv.push_back(v);
+			}
+
+		return resv;
 	}
 
-	
-	return Res;
-}
+	vector<Tv>diag(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t diag_n) {
+
+		vector<Tv> resv;
+
+		size_t it = A.columns() - diag_n;
+
+		for (size_t i = 0; i < it; ++i) {
+			resv.push_back(A(i, diag_n + i));
+		}
+
+		return resv;
+	}
+
+	CompressedMatrix<Tv, blaze::columnMajor>Diagonal(vector<Tv> &V) {
+		
+		size_t vsize = V.size();
+
+		CompressedMatrix<Tv, blaze::columnMajor>Res(vsize, vsize);
+
+		Res.reserve(vsize);
+
+		for (size_t i = 0; i < vsize; i++) {
+			Res.append(i, i, V[i]);
+			Res.finalize(i);
+		}
+
+		return Res;
+	}
+};
+
 
 /*
+function diagmat(a::SparseMatrixCSC{Tv, Ti}) where {Tv, Ti}
 
-function flipIndex(a::SparseMatrixCSC{Tval,Tind}) where {Tval,Tind}
+	return sparse(Diagonal(vec(sum(a,dims=1))))
 
-	b = SparseMatrixCSC(a.m, a.n, copy(a.colptr), copy(a.rowval), collect(UnitRange{Tind}(1,nnz(a))) );
-	bakMat = copy(b');
-	return bakMat.nzval
-
-  end
-
+  end # diagmat
   
-*/
+  */

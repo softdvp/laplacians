@@ -49,11 +49,32 @@ IJV(n, 2*(n-1), [collect(1:(n-1)) ; collect(2:n)],
 
 """
 
-A=SparseMatrixCSC{Int};
-B=SparseMatrixCSC{Int};
-A[1, 1] = 1; A[1, 2] = 4; A[1, 3] = 3; A[2, 1] = 2; A[2, 2] = 1;
-B[1, 1] = 5; B[1, 3] = 1; B[2, 1] = 7; B[2,2] = 2; B[3, 1] = 3; B[3, 3] = 1;
+#A(0, 0) = 1; A(0, 1) = 2; A(1, 0) = 3; A(1, 1) = 4;
+#B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
 
-println(A)
+#Test Kronecker product function kron(A, B)
 
-println(B)
+I=[1, 1, 2, 2]
+J=[1, 2, 1, 2]
+V=[1, 2, 3, 4]
+
+A = sparse(I,J,V,2,2)
+
+I=[1, 2, 2]
+J=[2, 1, 2]
+V=[5, 6, 7]
+
+B=sparse(I,J,V,2,2)
+
+C=kron(A, B)
+
+println(C)
+
+"""
+Out:
+
+0   5   0  10
+6   7  12  14
+0  15   0  20
+18  21  24  28
+"""

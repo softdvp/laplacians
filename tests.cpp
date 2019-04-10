@@ -33,10 +33,12 @@ void axpy2test() {
 }
 
 void dump_ijv(int ijvn, IJV<int> &ijv ) {
+	Laplacians<int> lapl;
+
 	cout << "ijv"<<ijvn<<" matrix dump:\n";
 
 	cout << "\n" << "n= " << ijv.n;
-	cout << "\n" << "nnz= " << nnz(ijv);
+	cout << "\n" << "nnz= " << lapl.nnz(ijv);
 
 	cout << "\ni=";
 	for (size_t k = 0; k < ijv.nnz; ++k)
@@ -49,6 +51,7 @@ void dump_ijv(int ijvn, IJV<int> &ijv ) {
 	cout << "\n" << "v= ";
 	for (size_t k = 0; k < ijv.nnz; ++k)
 		cout << ijv.v[k] << " ";
+		
 }
 
 void IJVtests() {
@@ -126,7 +129,9 @@ void IJVtests() {
 	cout << "\nTest sparse function.\n\n";
 	SparseMatrixCSC<int> CSCMx1;
 
-	CSCMx1 = sparse(ijv0);
+	Laplacians<int> lapl;
+
+	CSCMx1 = lapl.sparse(ijv0);
 
 	cout << "\nCSC sparse matrix dump:\n";
 	cout << "CSCMx1.m=" << CSCMx1.m << endl;
@@ -195,7 +200,7 @@ void IJVtests() {
 
 	dump_ijv(2, ijv2);
 
-	cout << "\n" << "nnz= " << nnz(ijv2);
+	cout << "\n" << "nnz= " << lapl.nnz(ijv2);
 
 	cout << "\n\nTest IJV::ToCompressMatrix():\n";
 
@@ -205,19 +210,19 @@ void IJVtests() {
 	assert(newm == m);
 
 	cout << "\n\nTest hash(IJV) function:\n";
-	cout <<"hash(ijv): " << hashijv(ijv0)<<endl;
-	cout << "hash(ijv, 5): " << hashijv(ijv0, 5) << endl;
+	cout <<"hash(ijv): " << lapl.hashijv(ijv0)<<endl;
+	cout << "hash(ijv, 5): " << lapl.hashijv(ijv0, 5) << endl;
 
 	cout << "\n\nTest compress(IJV) function:\n";
 
-	IJV<int>ijv3 = compress(ijv0);
+	IJV<int>ijv3 = lapl.compress(ijv0);
 
 	dump_ijv(3, ijv3);
 
 	assert(ijv0 == ijv3);
 
 	cout << endl << "\nTranspose ijv:\n ";
-	IJV<int> ijv4 = transpose(ijv0);
+	IJV<int> ijv4 = lapl.transpose(ijv0);
 
 	dump_ijv(4, ijv4);
 
@@ -231,17 +236,19 @@ void IJVtests() {
 }
 
 void CollectionTest() {
-	CompressedMatrix<int> m, m1;
+	CompressedMatrix<int, blaze::columnMajor> m, m1;
 
 	//Test path_graph_ijv
+	Laplacians<int> lapl;
 
-	IJV<int> ijv = path_graph_ijv<int>(5);
+	IJV<int> ijv = lapl.path_graph_ijv(5);
 
 	dump_ijv(0, ijv);
 	m1 = ijv.toCompressedMatrix();
 	cout << endl << endl << m1 << endl;
 
 	//Test testZeroDiag
+
 	assert(testZeroDiag(m1));
 
 	//Add non zero to a diagonal cell
@@ -257,35 +264,84 @@ void CollectionTest() {
 	m10(7, 8) = 1;
 
 	SparseMatrixCSC<int> sprs(m10);
-	vector<size_t> comp = components(sprs);
+	vector<size_t> comp = lapl.components(sprs);
 	
 	for (int i = 0; i < comp.size(); i++)
 		cout << comp[i] << " ";
 
 	cout << endl << endl;
-	cout << "Call of componets():\n";
+	cout << "Call function componets():\n";
 
-	vector<size_t>comp1 = components(m10);
+	vector<size_t>comp1 = lapl.components(m10);
 
 	for (int i = 0; i < comp1.size(); i++)
 		cout << comp[i] << " ";
 
 	assert(comp == comp1);
 
+	//Out = 1, 1, 1, 1, 1, 1, 2, 1, 1, 3
+	
 	cout << endl << endl;
 	
 	//Test Kronecker product function kron(A, B)
 
-	CompressedMatrix<int, blaze::columnMajor> A(2,2), B(2,2), Res;
+	CompressedMatrix<int, blaze::columnMajor> A(2,2), B(2,2), C;
 
 	//Create two occasional matrices
 	//See an example at https://en.wikipedia.org/wiki/Kronecker_product
 
 	A(0, 0) = 1; A(0, 1) = 2; A(1, 0) = 3; A(1, 1) = 4;
-	B(0, 0) = 0; B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
+	B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
 
 
-	Res = kron(A, B);
-	cout << "kron(A, B)=\n" << Res;
+	C = lapl.kron(A, B);
+	cout << "kron(A, B)=\n" << C;
+
+/*Out:
+	kron(A, B)=
+
+	0   5   0  10
+	6   7  12  14
+	0  15   0  20
+	18  21  24  28
 	
+	*/
+
+	//Test flipIndex
+
+	cout << endl << endl << "flipIndex(C)=\n";
+
+	vector<size_t> v = lapl.flipIndex(C);
+
+	for (int i = 0; i < v.size(); i++) {
+		cout << v[i] << " ";
+	}
+
+	//Out="flipIndex(C)=3, 9, 1, 4, 7, 10, 5, 11, 2, 6, 8, 12"
+
+	//Test function diag()
+
+	cout << endl << endl << "diag(C)=\n";
+
+	vector<int> v1 = lapl.diag(C, 1);
+
+	for (int i = 0; i < v1.size(); i++) {
+		cout << v1[i] << " ";
+	}
+
+	//Out: diag(C) = 5 12 20
+
+	//Test function Diagonal()
+
+	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(v1);
+
+	cout << endl << endl << "Diagonal(v)=\n" << Dg;
+
+	/* Out:
+	
+	5  0 0
+	0 12 0
+	0 20 0
+	
+	*/
 }
