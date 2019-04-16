@@ -295,7 +295,7 @@ void CollectionTest() {
 
 
 	C = lapl.kron(A, B);
-	cout << "kron(A, B)=\n" << C;
+	cout << "C = kron(A, B)=\n" << C;
 
 /*Out:
 	kron(A, B)=
@@ -332,16 +332,82 @@ void CollectionTest() {
 	//Out: diag(C) = 5 12 20
 
 	//Test function Diagonal()
-
-	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(v1);
+	
+	DynamicVector<int> dv=lapl.dynvec(v1);
+	
+	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(dv);
 
 	cout << endl << endl << "Diagonal(v)=\n" << Dg;
 
 	/* Out:
+	5  0  0
+	0 12  0
+	0  0 20
+	*/
+
+	//Test sum()
+
+	/*
+	C=	0  5   0  10
+	    6  7  12 14
+		0  15  0 20
+		18 21 24 28
+		
+		*/
+
+	DynamicVector<int> vec1 = lapl.sum(C);
+
+	cout << "\nsum(C) = \n" << vec1;
+	//Out: (24, 48, 36, 72)
+	assert(vec1[0] == 24 && vec1[1] == 48 && vec1[2] == 36 && vec1[3] == 72);
+
+	vec1 = lapl.sum(C, false);
+	cout << "\nsum(C) = \n" << vec1;
+	//Out: (15, 39, 35, 91)
+	assert(vec1[0] == 15 && vec1[1] == 39 && vec1[2] == 35 && vec1[3] == 91);
+
+	//Test diagmat()
+	CompressedMatrix<int, blaze::columnMajor> DiagMx = lapl.diagmat(C);
+	cout << "\ndiagmat(C) = \n" << DiagMx;
+
+	assert(DiagMx(0, 0) == 24 && DiagMx(1, 1) == 48 && DiagMx(2, 2) == 36 && DiagMx(3, 3) == 72);
 	
-	5  0 0
-	0 12 0
-	0 20 0
+	/*
+	Out:
+	
+	[0, 0]  =  24
+	[1, 1]  =  48
+	[2, 2]  =  36
+	[3, 3]  =  72
+  
+  */
+
+	//Test pow()
+	CompressedMatrix<int, blaze::columnMajor> mx1{ {1,2}, {3,4} };
+	CompressedMatrix<int, blaze::columnMajor>powmx = lapl.pow(mx1, 2);
+
+	cout << "\npow(M) = \n" << powmx;
+
+	/* Out:
+
+		7  10
+		15  22
+	*/
+
+	assert(powmx(0, 0) == 7 && powmx(0, 1) == 10 && powmx(1, 0) == 15 && powmx(1, 1) == 22);
+
+	//Test power():
+	CompressedMatrix<int, blaze::columnMajor>powmx1 = lapl.power(C, 2);
+
+	cout << "\npower(C, 2) = \n" << powmx1;
+
+	/* Out:
+		  0  245   300  350
+		294     0  420  790
+		450   525    0  770
+		630  1185  924    0
 	
 	*/
+
 }
+

@@ -44,6 +44,7 @@ transpose(ijv::IJV) = IJV(ijv.n, ijv.nnz, ijv.j, ijv.i, ijv.v)
 adjoint(ijv::IJV) = IJV(ijv.n, ijv.nnz, ijv.j, ijv.i, adjoint.(ijv.v))
 
 using SparseArrays
+#using LinearAlgebra
 """
     ijv = IJV(A::SparseMatrixCSC)
 Convert a sparse matrix to an IJV.
@@ -114,7 +115,7 @@ grid2(n::Integer, m::Integer; isotropy=1.0) =
     sparse(grid2_ijv(n, m; isotropy=isotropy))
 
 grid2_ijv(n::Integer, m::Integer; isotropy=1.0) =
-    product_graph(isotropy*path_graph_ijv(n), path_graph_ijv(m))
+    product_graph3(isotropy*path_graph_ijv(n), path_graph_ijv(m))
 
 grid2(n::Integer) = grid2(n,n)
 grid2_ijv(n::Integer) = grid2_ijv(n,n)
@@ -126,15 +127,14 @@ function path_graph_ijv(n::Integer)
         ones(2*(n-1)))
 end
 
-function product_graph(a0::SparseMatrixCSC, a1::SparseMatrixCSC)
+function product_graph3(a0::SparseMatrixCSC, a1::SparseMatrixCSC)
     n0 = size(a0)[1]
     n1 = size(a1)[1]
     a = kron(sparse(I,n0,n0),a1) + kron(a0,sparse(I, n1, n1));
 
   end # productGraph
 
-  function product_graph(b::IJV{Tva,Tia}, a::IJV{Tvb,Tib}) where {Tva, Tvb, Tia, Tib}
-
+  function product_graph3(b::IJV{Tva,Tia}, a::IJV{Tvb,Tib}) where {Tva, Tvb, Tia, Tib}
       Ti = promote_type(Tia, Tib)
 
       n = a.n * b.n
@@ -322,3 +322,5 @@ function approxQual(a1,a2; verbose=false, tol=1e-5)
 
     return max(sup12-1, sup21-1)
 end
+
+print(grid2(5))

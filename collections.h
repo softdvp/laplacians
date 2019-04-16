@@ -6,6 +6,9 @@
 #include <vector>
 
 using blaze::CompressedMatrix;
+using blaze::DynamicVector;
+using blaze::columnwise;
+using blaze::rowwise;
 using std::vector;
 
 // Julia sparse matrix class
@@ -464,7 +467,7 @@ public:
 		return resv;
 	}
 
-	vector<Tv>diag(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t diag_n) {
+	vector<Tv>diag(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t diag_n=0) {
 
 		vector<Tv> resv;
 
@@ -477,7 +480,7 @@ public:
 		return resv;
 	}
 
-	CompressedMatrix<Tv, blaze::columnMajor>Diagonal(vector<Tv> &V) {
+	CompressedMatrix<Tv, blaze::columnMajor>Diagonal(const DynamicVector<Tv> &V) {
 		
 		size_t vsize = V.size();
 
@@ -492,14 +495,55 @@ public:
 
 		return Res;
 	}
+
+	DynamicVector<Tv>dynvec(const vector<Tv> &v) {
+		DynamicVector<Tv>res(v.size());
+
+		for (auto i = 0; i < v.size(); ++i) {
+			res[i] = v[i];
+		}
+
+		return res;
+	}
+
+	DynamicVector<Tv>sum(const CompressedMatrix<Tv, blaze::columnMajor> &A, bool row_wise=true) {
+		DynamicVector<Tv>res;
+		
+		if (!row_wise)
+			res = blaze::sum<rowwise>(A);
+		else
+			res = trans(blaze::sum<columnwise>(A));
+
+		return res;
+	}
+
+	//Returns the diagonal weighted degree matrix(as a sparse matrix) of a graph
+	CompressedMatrix<Tv, blaze::columnMajor>diagmat(const CompressedMatrix<Tv, blaze::columnMajor> &A){
+			
+		return Diagonal(sum(A));
+	}
+
+	CompressedMatrix<Tv, blaze::columnMajor>pow(const CompressedMatrix<Tv, blaze::columnMajor> &A, const int n) {
+		CompressedMatrix<Tv, blaze::columnMajor> res;
+		
+		res = A;
+		for (size_t i = 0; i < n-1; i++) {
+			res *= A;
+		}
+
+		return res;
+	}
+
+	CompressedMatrix<Tv, blaze::columnMajor>power(const CompressedMatrix<Tv, blaze::columnMajor> &A, const int k) {
+		CompressedMatrix<Tv, blaze::columnMajor>ap;
+
+		ap = pow(A, k);
+		ap = ap - Diagonal(dynvec(diag(ap)));
+
+		return ap;
+	}
 };
 
 
-/*
-function diagmat(a::SparseMatrixCSC{Tv, Ti}) where {Tv, Ti}
 
-	return sparse(Diagonal(vec(sum(a,dims=1))))
 
-  end # diagmat
-  
-  */
