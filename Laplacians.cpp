@@ -7,13 +7,14 @@
 
 int main()
 {
-/*	bzbetatest();
-	std::cout << std::endl;
+	//bzbetatest();
+	//axpy2test();
 
-	axpy2test();*/
+	//IJVtests();
 
-	IJVtests();
+	//CollectionTest();
 
-	CollectionTest();
+	CollectionFunctionTest();
+
 }
 

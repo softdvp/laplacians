@@ -1,7 +1,6 @@
 #include <iostream>
 #include <assert.h>
 #include <blaze/Math.h>
-#include "pcg_1.h"
 #include "collections.h"
 
 using blaze::DynamicVector;
@@ -10,7 +9,7 @@ using namespace std;
 
 #include "tests.h"
 
-void bzbetatest() {
+/*void bzbetatest() {
 	DynamicVector<double>a{ 1, 2, 3, 4 };
 	DynamicVector<double>b{ 5, 4, 0, 1 };
 	
@@ -30,31 +29,23 @@ void axpy2test() {
 
 	cout << "Test of axpy2 function: " << "\n" << b << "\n";
 	//Out: 3, 12, 12, 17
-}
-
-void dump_ijv(int ijvn, IJV<int> &ijv ) {
-	Laplacians<int> lapl;
-
-	cout << "ijv"<<ijvn<<" matrix dump:\n";
-
-	cout << "\n" << "n= " << ijv.n;
-	cout << "\n" << "nnz= " << lapl.nnz(ijv);
-
-	cout << "\ni=";
-	for (size_t k = 0; k < ijv.nnz; ++k)
-		cout << ijv.i[k] << " ";
-
-	cout << "\n" << "j=";
-	for (size_t k = 0; k < ijv.nnz; ++k)
-		cout << ijv.j[k] << " ";
-
-	cout << "\n" << "v= ";
-	for (size_t k = 0; k < ijv.nnz; ++k)
-		cout << ijv.v[k] << " ";
-		
-}
+}*/
 
 void IJVtests() {
+
+	CompressedMatrix<int, blaze::columnMajor> z{ {0,0,0,0}, {5,8,0,0}, {0,0,3,0}, {0,6,0,0} };
+
+
+	cout << "============================================\n";
+	for (int i = 0; i < z.rows(); i++) {
+		for (int j = 0; j < z.columns(); j++)
+			cout << z(i, j) << " ";
+		cout << endl;
+	}
+
+
+	cout << z << "\n============================================\n";
+
 	//Convert a BLAZE sparse matrix to an IJV
 
 	// A sample of  matrix was taken from 
@@ -81,12 +72,15 @@ void IJVtests() {
 	for (size_t k = 0; k < CSCMx.nzval.size(); ++k)
 		cout << CSCMx.nzval[k] << " ";
 
+	assert(CSCMx.m == 4 && CSCMx.n == 4 && CSCMx.colptr[0] == 0 && CSCMx.colptr[3] == 4 && 
+		CSCMx.rowval[0] == 1 && CSCMx.rowval[3] == 2 && CSCMx.nzval[0] == 5 && CSCMx.nzval[2] == 6);
+
 	/* for column major (default) matrix:
 	CSCMx.m=4
 	CSCMx.n=4
-	CSCMx.colptr.i= 0 1 3 4 4
+	CSCMx.colptr= 0 1 3 4 4
 	CSCMx.rowval= 1 1 3 2
-	CSCMx.nzval.v= 5 8 6 3
+	CSCMx.nzval= 5 8 6 3
 	*/
 
 	cout << endl << "\nTest toCompressedMatrix():\n";
@@ -101,6 +95,9 @@ void IJVtests() {
 	IJV<int> ijv0(m);
 
 	dump_ijv(0, ijv0);
+
+	assert(ijv0.n == 4 && ijv0.nnz == 4 && ijv0.i[0] == 1 && ijv0.i[2] == 3 && ijv0.j[0] == 0 && ijv0.j[3] == 2 &&
+		ijv0.v[0] == 5 && ijv0.v[2] == 6);
 	
 	/*Out:
 		ijv0.n=4
@@ -131,7 +128,7 @@ void IJVtests() {
 
 	Laplacians<int> lapl;
 
-	CSCMx1 = lapl.sparse(ijv0);
+	CSCMx1 = lapl.sparseCSC(ijv0);
 
 	cout << "\nCSC sparse matrix dump:\n";
 	cout << "CSCMx1.m=" << CSCMx1.m << endl;
@@ -149,7 +146,7 @@ void IJVtests() {
 	for (size_t k = 0; k < CSCMx1.nzval.size(); ++k)
 		cout << CSCMx1.nzval[k] << " ";
 
-	assert(CSCMx == CSCMx);
+	assert(CSCMx == CSCMx1);
 
 	/* for column major (default) matrix:
 	 CSCMx1.m=4
@@ -172,11 +169,14 @@ void IJVtests() {
 	bool t = ijv1 == ijv0;
 	cout << "\n\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
 
+	assert(ijv1 == ijv0);
+
 	//Change ijv1
 	ijv1.v[0] = 10;
 
 	t = ijv1 == ijv0;
 	cout << "\n\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
+	assert(!(ijv1 == ijv0));
 
 	cout << "\n\noperator* :\n ijv * 5";
 
@@ -188,19 +188,23 @@ void IJVtests() {
 
 	cout << "\n\noperator* :\n 5 * ijv";
 
+	assert(ijv1.v[0] == 25 && ijv1.v[1] == 40);
+
 	ijv1 = 5 * ijv0;
 
 	cout << "\n" << "ijv1.v= ";
 	for (size_t k = 0; k < ijv1.nnz; ++k)
 		cout << ijv1.v[k] << " ";
 
-	cout << "Test a constructor";
+	assert(ijv1.v[0] == 25 && ijv1.v[1] == 40);
+
+	cout << "\n\nTest a constructor:\n";
 
 	IJV<int> ijv2(ijv0.n, ijv0.nnz, ijv0.i, ijv0.j, ijv0.v);
 
 	dump_ijv(2, ijv2);
 
-	cout << "\n" << "nnz= " << lapl.nnz(ijv2);
+	assert(ijv2 == ijv0);
 
 	cout << "\n\nTest IJV::ToCompressMatrix():\n";
 
@@ -209,9 +213,13 @@ void IJVtests() {
 
 	assert(newm == m);
 
+	size_t h1 = lapl.hashijv(ijv0);
+	size_t h2 = lapl.hashijv(ijv0, 5);
 	cout << "\n\nTest hash(IJV) function:\n";
-	cout <<"hash(ijv): " << lapl.hashijv(ijv0)<<endl;
-	cout << "hash(ijv, 5): " << lapl.hashijv(ijv0, 5) << endl;
+	cout <<"hash(ijv): " << h1 << endl;
+	cout << "hash(ijv, 5): " << h2 << endl;
+
+	assert(h1 != h2);
 
 	cout << "\n\nTest compress(IJV) function:\n";
 
@@ -225,6 +233,7 @@ void IJVtests() {
 	IJV<int> ijv4 = lapl.transpose(ijv0);
 
 	dump_ijv(4, ijv4);
+	assert(ijv4.i == ijv0.j && ijv4.j == ijv0.i && ijv4.v == ijv0.v);
 
 	cout << endl << ijv4.toCompressedMatrix()<<endl;
 
@@ -233,19 +242,39 @@ void IJVtests() {
 
 	assert(CSCMx2 == CSCMx);
 
+	cout << "\nTest IJV constructor with Dynamic Vectors:\n";
+
+	DynamicVector<int>VI{ 1, 1, 3, 2 }, VJ{ 0, 1, 1, 2 }, VV{ 5, 8, 6, 3 };
+
+	IJV<int> ijv5(4, 4, VI, VJ, VV);
+	dump_ijv(5, ijv5);
+
+	assert(ijv5 == ijv0);
+
 }
 
 void CollectionTest() {
 	CompressedMatrix<int, blaze::columnMajor> m, m1;
 
-	//Test path_graph_ijv
 	Laplacians<int> lapl;
 
+	//Test path_graph_ijv
 	IJV<int> ijv = lapl.path_graph_ijv(5);
 
 	dump_ijv(0, ijv);
 	m1 = ijv.toCompressedMatrix();
 	cout << endl << endl << m1 << endl;
+	assert(m1(0, 0) == 0 && m1(0, 1) == 1 && m1(1, 0) == 1);
+
+	/* Out:
+	0  1  0  0  0
+	1  0  1  0  0
+	0  1  0  1  0
+	0  0  1  0  1
+	0  0  0  1  0
+	
+	*/
+
 
 	//Test testZeroDiag
 
@@ -263,14 +292,14 @@ void CollectionTest() {
 	m10(8, 5) = 1;	m10(4, 7) = 1;	m10(8, 7) = 1;	m10(1, 8) = 1;	m10(5, 8) = 1;
 	m10(7, 8) = 1;
 
+	cout << endl << endl;
+	cout << "\n\nCall function componets():\n";
+
 	SparseMatrixCSC<int> sprs(m10);
 	vector<size_t> comp = lapl.components(sprs);
 	
 	for (int i = 0; i < comp.size(); i++)
 		cout << comp[i] << " ";
-
-	cout << endl << endl;
-	cout << "Call function componets():\n";
 
 	vector<size_t>comp1 = lapl.components(m10);
 
@@ -278,6 +307,7 @@ void CollectionTest() {
 		cout << comp[i] << " ";
 
 	assert(comp == comp1);
+	assert(comp[0] == 1 && comp[6] == 2 && comp[9] == 3);
 
 	//Out = 1, 1, 1, 1, 1, 1, 2, 1, 1, 3
 	
@@ -293,9 +323,9 @@ void CollectionTest() {
 	A(0, 0) = 1; A(0, 1) = 2; A(1, 0) = 3; A(1, 1) = 4;
 	B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
 
-
 	C = lapl.kron(A, B);
-	cout << "C = kron(A, B)=\n" << C;
+	cout << "\nC = kron(A, B)=\n" << C;
+	assert(C(0, 0) == 0 && C(1, 1) == 7 && C(3, 3) == 28);
 
 /*Out:
 	kron(A, B)=
@@ -316,7 +346,7 @@ void CollectionTest() {
 	for (int i = 0; i < v.size(); i++) {
 		cout << v[i] << " ";
 	}
-
+	assert(v[0] == 3 && v[1] == 9 && v[3] == 4);
 	//Out="flipIndex(C)=3, 9, 1, 4, 7, 10, 5, 11, 2, 6, 8, 12"
 
 	//Test function diag()
@@ -328,16 +358,17 @@ void CollectionTest() {
 	for (int i = 0; i < v1.size(); i++) {
 		cout << v1[i] << " ";
 	}
-
+	assert(v1[0] == 5 && v1[1] == 12 && v1[2] == 20);
 	//Out: diag(C) = 5 12 20
 
 	//Test function Diagonal()
 	
-	DynamicVector<int> dv=lapl.dynvec(v1);
+	DynamicVector<int> dv=dynvec(v1);
 	
 	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(dv);
 
 	cout << endl << endl << "Diagonal(v)=\n" << Dg;
+	assert(Dg(0, 0) == 5 && Dg(1, 1) == 12 & Dg(2, 2) == 20);
 
 	/* Out:
 	5  0  0
@@ -401,6 +432,8 @@ void CollectionTest() {
 
 	cout << "\npower(C, 2) = \n" << powmx1;
 
+	assert(powmx1(0, 1) == 245 && powmx1(1, 0) == 294);
+
 	/* Out:
 		  0  245   300  350
 		294     0  420  790
@@ -409,5 +442,82 @@ void CollectionTest() {
 	
 	*/
 
+	//Test kron()  for vectors
+
+	DynamicVector<int>Av{ 1,2,3 }, Bv{ 4, 5, 6 }, Cv;
+
+	Cv = lapl.kron(Av, Bv);
+	cout << "\nCv = kron(Av, Bv)=\n" << Cv;
+
+	//Out = (4, 5, 6, 8, 10, 12, 12, 15, 18)
+	assert(Cv[0] == 4 && Cv[3] == 8 && Cv[8] == 18);
+
+	cout << "\nTest overloaded IJV operators.\n";
+
+	IJV<int> ijv1(mx1), ijv2(powmx), ijv3;
+
+	ijv3 = ijv1 + ijv2;
+
+	cout << "\noperator+ :\n";
+
+	dump_ijv(1, ijv1);
+	cout << endl;
+	dump_ijv(2, ijv2);
+	cout << endl;
+	dump_ijv(3, ijv3);
+	cout << endl;
+	assert(ijv3.i[0] == 0 && ijv3.i[4] == 0 && ijv3.j[0] == 0 && ijv3.j[4] == 0 && ijv3.v[0] == 1 && ijv3.v[4] == 7);
+	
 }
 
+void CollectionFunctionTest() {
+	
+	Laplacians<int> lapl;
+	
+	//Test product_graph() function
+		
+	CompressedMatrix<int, blaze::columnMajor>
+		GrA{ {0, 1, 0, 1, 0, 0, 0, 0, 0}, {1, 0, 1, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 0, 0, 0},
+			{1, 0, 0, 0, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
+			{0, 0, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
+
+	//cout << endl << GrA;
+
+	CompressedMatrix<int, blaze::columnMajor>
+		GrB{ {0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0},
+			 {0, 1, 0, 0, 0, 0, 0, 1, 0}, {1, 0, 0, 0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
+			 { 0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
+
+	//cout << endl << GrB;
+
+	IJV<int>IJVA(GrA), IJVB(GrB);
+
+  	IJV<int> ijv0 = lapl.product_graph(IJVA, IJVB);
+	/*cout << "\n\nproduct_graph(B, A)=\n";
+	dump_ijv(0, ijv0);*/
+	assert(ijv0.i[2] == 22 && ijv0.i[ijv0.i.size() - 3] == 35 && ijv0.j[2] == 18 && ijv0.j[ijv0.j.size() - 3] == 71);
+
+	CompressedMatrix<int, blaze::columnMajor>GridMx;
+
+	//Test grid2()
+	GridMx = lapl.grid2(5);
+
+	//cout << GridMx;
+
+	assert(GridMx(0, 1) == 1 && GridMx(0, 5) == 1 && GridMx(1, 0) == 1);
+
+	CompressedMatrix<int, blaze::columnMajor>LapMx = lapl.lap(GrA);
+	//cout << LapMx;
+
+	assert(LapMx(0, 0) == 2 && LapMx(1, 1) == 3 && LapMx(3, 0) == -1 && LapMx(0, 1) == -1);
+
+	//Test vecToComps() function
+
+	DynamicVector<size_t> V{ 1, 2, 1, 2, 3, 3, 3 };
+
+	DynamicVector<DynamicVector<size_t>>comp = vecToComps(V);
+
+	cout << comp;
+
+	assert(comp[0][1] == 2 && comp[1][1] == 3 && comp[2][1]==5);
+}
