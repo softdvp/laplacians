@@ -40,6 +40,8 @@ end
 
 *(x::Number, a::IJV) = *(a, x)
 
+import Base.transpose
+
 transpose(ijv::IJV) = IJV(ijv.n, ijv.nnz, ijv.j, ijv.i, ijv.v)
 adjoint(ijv::IJV) = IJV(ijv.n, ijv.nnz, ijv.j, ijv.i, adjoint.(ijv.v))
 

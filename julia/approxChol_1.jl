@@ -548,7 +548,7 @@ The `ApproxCholParams` let you choose one of three orderings to perform the elim
     This is the fastest for construction the preconditioner, but the slowest solve.
 * ApproxCholParams(:deg) - always eliminate the node of lowest degree.
     This is the slowest build, but the fastest solve.
-* ApproxCholParams(:wdeg) - go by a perturbed order of wted degree.  
+* ApproxCholParams(:wdeg) - go by a perturbed order of wted degree.
 
 For more info, see http://danspielman.github.io/Laplacians.jl/latest/usingSolvers/index.html
 """

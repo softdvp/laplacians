@@ -1,7 +1,9 @@
 #include <iostream>
 #include <assert.h>
 #include <blaze/Math.h>
+#include <functional>
 #include "collections.h"
+#include "approxchol.h"
 
 using blaze::DynamicVector;
 using blaze::CompressedMatrix;
@@ -341,7 +343,7 @@ void CollectionTest() {
 
 	cout << endl << endl << "flipIndex(C)=\n";
 
-	vector<size_t> v = lapl.flipIndex(C);
+	vector<size_t> v = flipIndex(C);
 
 	for (int i = 0; i < v.size(); i++) {
 		cout << v[i] << " ";
@@ -517,7 +519,127 @@ void CollectionFunctionTest() {
 
 	DynamicVector<DynamicVector<size_t>>comp = vecToComps(V);
 
-	cout << comp;
+	//cout << comp;
 
 	assert(comp[0][1] == 2 && comp[1][1] == 3 && comp[2][1]==5);
+
+	CompressedMatrix<int, blaze::columnMajor> Ma{ {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
+
+	DynamicVector<size_t> Idx1{ 0, 1 }, Idx2{ 1, 2 };
+
+	CompressedMatrix<int, blaze::columnMajor> Midx = lapl.index(Ma, Idx1, Idx2);
+
+	//cout << Midx << endl;
+
+	assert(Midx(0, 0) == 2 && Midx(0, 1) == 3 && Midx(1, 0) == 5 && Midx(1, 1) == 6);
+
+	DynamicVector<size_t> Idx0{ 0 };
+
+	Midx = lapl.index(Ma, Idx1, Idx0);
+
+	//cout << Midx << endl;
+
+	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);
+
+	Midx = lapl.index(Ma, Idx1);
+	//cout << Midx << endl;
+
+	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);
+
+	DynamicVector<int> vout(10, 0), vin{ 3, 5, 9 };
+
+	DynamicVector<size_t> idx{ 1, 2, 6 };
+
+	lapl.index(vout, idx, vin);
+
+	//cout << vout << endl;
+
+	assert(vout[1] == 3 && vout[2] == 5 && vout[6] == 9);
+
+	//cout << a << endl << b << endl;
+
+	// Cholesky decomposition
+	// Test cholesky function
+
+	//Test example from https://en.wikipedia.org/wiki/Cholesky_decomposition
+
+	CompressedMatrix<double, blaze::columnMajor> ChA{ {4.0, 12.0, -16.0}, {12.0, 37.0,	 -43.0}, {-16.0, -43.0, 98.0 } };
+	CompressedMatrix<double, blaze::columnMajor> L;
+
+	Laplacians<double> lapld;
+	Factorization<double> f;
+
+	try {
+		f = cholesky(ChA);
+	}
+	catch(std::runtime_error ex) {
+		cout << ex.what();
+	}
+
+	//cout << f.Lower << endl;
+
+	CompressedMatrix<double, blaze::columnMajor> ChA1 = f.Lower * blaze::ctrans(f.Lower);
+
+	assert(ChA1 == ChA);
+
+	//Test chol_subst function
+
+	CompressedMatrix<double, blaze::columnMajor>X{ {1.0,0.0,0.0}, {2.0,0.0,0.0}, {3.,0.,0.} };
+
+	DynamicVector<double> x;
+
+	try {
+		x = chol_subst(f.Lower, X);
+	}
+	catch (std::runtime_error ex) {
+		cout << ex.what();
+	}
+	DynamicVector<double> B = ChA * x;
+
+	//cout <<"X=\n" << x << endl;
+	//cout << "B=\n" << B << endl;
+		
+	assert(abs(B[0] - X(0,0))<1e-6 && abs(B[1] - X(1, 0)) < 1e-6 && abs(B[2] - X(2, 0)) < 1e-6);
+	
+	//Calculation error
+
+	//Create random matrices A and B
+	CompressedMatrix<double, blaze::columnMajor> a{
+	{-0.356543, -0.136045, -1.93844, 1.18337, -0.207743},
+	{-0.67799, 1.95279, -0.193003, -1.84183, -0.662046},
+	{2.61283, 1.51118, 0.672955, -0.840613, 2.01147},
+	{0.859572, -0.943768, 0.375822, -1.57407, -0.858285},
+	{-0.0863611, -1.47299, 1.02716, 1.904, -0.42796}
+	};
+
+	CompressedMatrix<double, blaze::columnMajor> b
+	{ {1.064160977905516,0,0,0,0}, 
+	{-0.3334067812850509,0,0,0,0},  
+	{0.7919292830316926,0,0,0,0}, 
+	{0.01651278833545206,0,0,0,0},
+	{-0.6051230029995152,0,0,0,0} };
+
+	a = a * blaze::trans(a);
+	
+	SolverRes<double>SolveA = lapld.wrapInterface(cholesky<double>, a);
+
+	DynamicVector<double> b1(b.rows());
+
+	for (int i = 0; i < b1.size(); i++)
+		b1[i] = b(i, 0);
+
+	double l2 = norm(a*SolveA(b) - b1);
+
+	cout << "norm(ax-b)=" << l2;
+
+	assert(abs(l2) < 2e-16);
+	
+	//CompressedMatrix<double, blaze::columnMajor> x=SolveA
+	//auto solvea = lapld.wrapInterface([=](CompressedMatrix<double, blaze::columnMajor> &X) { return lapld.cholesky(X);});
+
+	//solvea = wrapInterface(X->cholesky(X, Val(true)), a, maxits = 100, verbose = true)
+
+	// norm = 7.2165330597487115e-16
 }
+
+	

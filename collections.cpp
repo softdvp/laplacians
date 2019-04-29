@@ -1,5 +1,6 @@
 #include <iostream>
 #include "collections.h"
+#include "approxchol.h"
 
 using std::cout;
 
@@ -50,3 +51,4 @@ const DynamicVector<DynamicVector<size_t>>vecToComps(DynamicVector<size_t> &comp
 		
 		return comps;
 	}
+

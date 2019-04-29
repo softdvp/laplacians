@@ -34,6 +34,9 @@ julia> norm(a*solvea(b, verbose=false, maxtime = 10)-b)
 function wrapInterface(solver::Function, a::AbstractMatrix; tol=0, maxits=Inf, maxtime=Inf, verbose=false, pcgIts=Int[],params...)
     t1 = time()
     sol = solver(a)
+
+    #   display(sol)
+
     if verbose
         println("Solver build time: ", round((time() - t1),digits=3), " seconds.")
     end
@@ -45,6 +48,7 @@ function wrapInterface(solver::Function, a::AbstractMatrix; tol=0, maxits=Inf, m
 
         t1 = time()
         if isa(sol,Factorization)
+
             x = sol \ b
         else
             x = sol(b; params...)
@@ -213,7 +217,7 @@ function lapWrapComponents(solver, a::AbstractArray; tol::Real=1e-6, maxits=Inf,
         @warn "The matrix should not have any nonzero diagonal entries."
         a = a - sparse(Diagonal(diag(a)))
     end
-    
+
     co = components(a)
 
     if maximum(co) == 1
@@ -337,7 +341,7 @@ function sddmWrapLap(lapSolver)
     return f
 end
 
-    
+
 """
     f = wrapCaptureRhs(sola::Function, rhss; tol::Real=1e-6, maxits=Inf, maxtime=Inf, verbose=false, pcgIts=Int[], params...)
 

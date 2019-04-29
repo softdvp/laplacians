@@ -1,5 +1,7 @@
 include("pcg_1.jl")
 include("collection.jl")
+using Laplacians
+include("solverInterface.jl")
 using SparseArrays
 
 """
@@ -172,10 +174,61 @@ Mx1=Matrix(grid2(5))
 LapMx=lap(GrA)
 
 display(LapMx)
-"""
+
 
 V=vec([1, 1, 2, 2, 3])
 
  R=vecToComps(V)
 
  display(R)
+
+#Test cholesky
+
+A=[4.0 12.0 -16.0; 12.0 37.0 -43.0; -16.0 -43.0 98.0]
+B=[1.0, 2.0, 3.0]
+
+F=cholesky(A)
+println("Cholevsky Factorozation=\n")
+display(F.L)
+
+
+X=F  B
+println("X=", X)
+Bx=A*X
+println("Bx=", Bx)
+
+"""
+
+a=[ -0.356543 -0.136045 -1.93844 1.18337 -0.207743;
+    -0.67799 1.95279 -0.193003 -1.84183 -0.662046;
+     2.61283 1.51118 0.672955 -0.840613 2.01147;
+     0.859572 -0.943768 0.375822 -1.57407 -0.858285;
+     -0.0863611 -1.47299 1.02716 1.904 -0.42796]
+
+b=transpose([1.064160977905516 -0.3334067812850509  0.7919292830316926 0.01651278833545206 -0.6051230029995152])
+a = a * a'
+println("a * a' = \n")
+display(a)
+solvea = wrapInterface(X->cholesky(X,Val(true)), a, maxits=100, verbose=true)
+x=solvea(b, verbose=false)
+println("\n\nx=\n")
+display(x)
+
+println("\n\nb=\n")
+display(b)
+
+ax=a*x
+println("\n\nax=\n")
+display(ax)
+
+ax_b=ax-b
+println("\n\nax_b=\n")
+display(ax_b)
+
+println("\n\nnorm(ax-b)=", norm(ax_b))
+
+"""
+f = wrapInterface(X->cholesky(X,Val(true)))
+solvea = f(a, maxits=1000, maxtime = 1)
+println(norm(a*solvea(b, verbose=false, maxtime = 10)-b))
+"""
