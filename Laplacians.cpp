@@ -12,7 +12,7 @@ int main()
 
 	//IJVtests();
 
-	//CollectionTest();
+	CollectionTest();
 
 	CollectionFunctionTest();
 

@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <blaze/Math.h>
 #include <functional>
+#include <utility>
 #include "collections.h"
 #include "approxchol.h"
 
@@ -263,9 +264,9 @@ void CollectionTest() {
 	//Test path_graph_ijv
 	IJV<int> ijv = lapl.path_graph_ijv(5);
 
-	dump_ijv(0, ijv);
+	//dump_ijv(0, ijv);
 	m1 = ijv.toCompressedMatrix();
-	cout << endl << endl << m1 << endl;
+	//cout << endl << endl << m1 << endl;
 	assert(m1(0, 0) == 0 && m1(0, 1) == 1 && m1(1, 0) == 1);
 
 	/* Out:
@@ -294,26 +295,29 @@ void CollectionTest() {
 	m10(8, 5) = 1;	m10(4, 7) = 1;	m10(8, 7) = 1;	m10(1, 8) = 1;	m10(5, 8) = 1;
 	m10(7, 8) = 1;
 
-	cout << endl << endl;
-	cout << "\n\nCall function componets():\n";
+	//cout << endl << endl;
+	//cout << "\n\nCall function componets():\n";
 
 	SparseMatrixCSC<int> sprs(m10);
-	vector<size_t> comp = lapl.components(sprs);
+	DynamicVector<size_t> comp = lapl.components(sprs);
 	
-	for (int i = 0; i < comp.size(); i++)
-		cout << comp[i] << " ";
+	/*for (int i = 0; i < comp.size(); i++)
+		cout << comp[i] << " ";*/
 
-	vector<size_t>comp1 = lapl.components(m10);
+	//cout << endl;
 
-	for (int i = 0; i < comp1.size(); i++)
-		cout << comp[i] << " ";
+	DynamicVector<size_t>comp1 = lapl.components(m10);
 
+	/*for (int i = 0; i < comp1.size(); i++)
+		cout << comp1[i] << " ";*/
+
+	//cout << endl;
 	assert(comp == comp1);
 	assert(comp[0] == 1 && comp[6] == 2 && comp[9] == 3);
 
 	//Out = 1, 1, 1, 1, 1, 1, 2, 1, 1, 3
 	
-	cout << endl << endl;
+	//cout << endl << endl;
 	
 	//Test Kronecker product function kron(A, B)
 
@@ -326,7 +330,7 @@ void CollectionTest() {
 	B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
 
 	C = lapl.kron(A, B);
-	cout << "\nC = kron(A, B)=\n" << C;
+	//cout << "\nC = kron(A, B)=\n" << C;
 	assert(C(0, 0) == 0 && C(1, 1) == 7 && C(3, 3) == 28);
 
 /*Out:
@@ -341,25 +345,27 @@ void CollectionTest() {
 
 	//Test flipIndex
 
-	cout << endl << endl << "flipIndex(C)=\n";
+	//cout << endl << endl << "flipIndex(C)=\n";
 
 	vector<size_t> v = flipIndex(C);
 
-	for (int i = 0; i < v.size(); i++) {
+	/*for (int i = 0; i < v.size(); i++) {
 		cout << v[i] << " ";
-	}
+	}*/
 	assert(v[0] == 3 && v[1] == 9 && v[3] == 4);
+	
 	//Out="flipIndex(C)=3, 9, 1, 4, 7, 10, 5, 11, 2, 6, 8, 12"
 
 	//Test function diag()
 
-	cout << endl << endl << "diag(C)=\n";
+	//cout << endl << endl << "diag(C)=\n";
 
 	vector<int> v1 = lapl.diag(C, 1);
 
-	for (int i = 0; i < v1.size(); i++) {
+	/*for (int i = 0; i < v1.size(); i++) {
 		cout << v1[i] << " ";
-	}
+	}*/
+
 	assert(v1[0] == 5 && v1[1] == 12 && v1[2] == 20);
 	//Out: diag(C) = 5 12 20
 
@@ -369,7 +375,7 @@ void CollectionTest() {
 	
 	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(dv);
 
-	cout << endl << endl << "Diagonal(v)=\n" << Dg;
+	//cout << endl << endl << "Diagonal(v)=\n" << Dg;
 	assert(Dg(0, 0) == 5 && Dg(1, 1) == 12 & Dg(2, 2) == 20);
 
 	/* Out:
@@ -388,38 +394,55 @@ void CollectionTest() {
 		
 		*/
 
+	// rowwise sum
 	DynamicVector<int> vec1 = lapl.sum(C);
 
-	cout << "\nsum(C) = \n" << vec1;
-	//Out: (24, 48, 36, 72)
-	assert(vec1[0] == 24 && vec1[1] == 48 && vec1[2] == 36 && vec1[3] == 72);
-
-	vec1 = lapl.sum(C, false);
-	cout << "\nsum(C) = \n" << vec1;
+	//cout << "\nsum(C) = \n" << vec1;
 	//Out: (15, 39, 35, 91)
 	assert(vec1[0] == 15 && vec1[1] == 39 && vec1[2] == 35 && vec1[3] == 91);
 
+	//columnwise sum
+	vec1 = lapl.sum(C, 2);
+	//cout << "\nsum(C) = \n" << vec1;
+	//Out: (24, 48, 36, 72)
+	assert(vec1[0] == 24 && vec1[1] == 48 && vec1[2] == 36 && vec1[3] == 72);
+
 	//Test diagmat()
 	CompressedMatrix<int, blaze::columnMajor> DiagMx = lapl.diagmat(C);
-	cout << "\ndiagmat(C) = \n" << DiagMx;
+	//cout << "\ndiagmat(C) = \n" << DiagMx;
 
-	assert(DiagMx(0, 0) == 24 && DiagMx(1, 1) == 48 && DiagMx(2, 2) == 36 && DiagMx(3, 3) == 72);
+	assert(DiagMx(0, 0) == 15 && DiagMx(1, 1) == 39 && DiagMx(2, 2) == 35 && DiagMx(3, 3) == 91);
 	
 	/*
 	Out:
 	
-	[0, 0]  =  24
-	[1, 1]  =  48
-	[2, 2]  =  36
-	[3, 3]  =  72
-  
+	15 0 0 0
+	0 39 0 0
+	0 0 35 0
+	0 0 0 91 
   */
+
+	//Test findmax function
+
+	pair<int, size_t> mxpair = lapl.findmax(C);
+
+	cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
+	bool bl = mxpair == pair<int, size_t>(28, 3);
+	assert(bl);
+
+	DynamicVector<int> vmax{ 1, 2, 5, 4, 0 };
+	mxpair = lapl.findmax(vmax);
+
+	cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
+
+	bl = mxpair == pair<int, size_t>(5, 2);
+	assert(bl);
 
 	//Test pow()
 	CompressedMatrix<int, blaze::columnMajor> mx1{ {1,2}, {3,4} };
 	CompressedMatrix<int, blaze::columnMajor>powmx = lapl.pow(mx1, 2);
 
-	cout << "\npow(M) = \n" << powmx;
+	//cout << "\npow(M) = \n" << powmx;
 
 	/* Out:
 
@@ -432,7 +455,7 @@ void CollectionTest() {
 	//Test power():
 	CompressedMatrix<int, blaze::columnMajor>powmx1 = lapl.power(C, 2);
 
-	cout << "\npower(C, 2) = \n" << powmx1;
+	//cout << "\npower(C, 2) = \n" << powmx1;
 
 	assert(powmx1(0, 1) == 245 && powmx1(1, 0) == 294);
 
@@ -449,27 +472,26 @@ void CollectionTest() {
 	DynamicVector<int>Av{ 1,2,3 }, Bv{ 4, 5, 6 }, Cv;
 
 	Cv = lapl.kron(Av, Bv);
-	cout << "\nCv = kron(Av, Bv)=\n" << Cv;
+	//cout << "\nCv = kron(Av, Bv)=\n" << Cv;
 
 	//Out = (4, 5, 6, 8, 10, 12, 12, 15, 18)
 	assert(Cv[0] == 4 && Cv[3] == 8 && Cv[8] == 18);
 
-	cout << "\nTest overloaded IJV operators.\n";
+	//cout << "\nTest overloaded IJV operators.\n";
 
 	IJV<int> ijv1(mx1), ijv2(powmx), ijv3;
 
 	ijv3 = ijv1 + ijv2;
 
-	cout << "\noperator+ :\n";
+	//cout << "\noperator+ :\n";
 
-	dump_ijv(1, ijv1);
-	cout << endl;
-	dump_ijv(2, ijv2);
-	cout << endl;
-	dump_ijv(3, ijv3);
-	cout << endl;
+	//dump_ijv(1, ijv1);
+	//cout << endl;
+	//dump_ijv(2, ijv2);
+	//cout << endl;
+	//dump_ijv(3, ijv3);
+	//cout << endl;
 	assert(ijv3.i[0] == 0 && ijv3.i[4] == 0 && ijv3.j[0] == 0 && ijv3.j[4] == 0 && ijv3.v[0] == 1 && ijv3.v[4] == 7);
-	
 }
 
 void CollectionFunctionTest() {
@@ -481,13 +503,13 @@ void CollectionFunctionTest() {
 	CompressedMatrix<int, blaze::columnMajor>
 		GrA{ {0, 1, 0, 1, 0, 0, 0, 0, 0}, {1, 0, 1, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 0, 0, 0},
 			{1, 0, 0, 0, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
-			{0, 0, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
+			{0, 0, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
 
 	//cout << endl << GrA;
 
 	CompressedMatrix<int, blaze::columnMajor>
 		GrB{ {0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0},
-			 {0, 1, 0, 0, 0, 0, 0, 1, 0}, {1, 0, 0, 0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
+			 {0, 1, 0, 0, 0, 0, 0, 1, 0}, {1, 0, 0, 0, 0, 1, 1, 0, 0}, {0, 0, 1, 0, 1, 0, 0, 0, 1},
 			 { 0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
 
 	//cout << endl << GrB;
@@ -508,10 +530,16 @@ void CollectionFunctionTest() {
 
 	assert(GridMx(0, 1) == 1 && GridMx(0, 5) == 1 && GridMx(1, 0) == 1);
 
-	CompressedMatrix<int, blaze::columnMajor>LapMx = lapl.lap(GrA);
-	//cout << LapMx;
+	//Test lap function
+	CompressedMatrix<int, blaze::columnMajor> LapMx = lapl.lap(GrA);
+	//cout << LapMx << endl;
 
 	assert(LapMx(0, 0) == 2 && LapMx(1, 1) == 3 && LapMx(3, 0) == -1 && LapMx(0, 1) == -1);
+
+	//Test forceLap function
+	CompressedMatrix<int, blaze::columnMajor>forceLapMx = lapl.forceLap(GrA);
+	//cout << forceLapMx << endl;
+	assert(forceLapMx(0, 0) == 2 && forceLapMx(1, 1) == 3 && forceLapMx(3, 0) == -1 && forceLapMx(0, 1) == -1);
 
 	//Test vecToComps() function
 
@@ -601,9 +629,10 @@ void CollectionFunctionTest() {
 		
 	assert(abs(B[0] - X(0,0))<1e-6 && abs(B[1] - X(1, 0)) < 1e-6 && abs(B[2] - X(2, 0)) < 1e-6);
 	
-	//Calculation error
+	//Test calculation error
 
 	//Create random matrices A and B
+
 	CompressedMatrix<double, blaze::columnMajor> a{
 	{-0.356543, -0.136045, -1.93844, 1.18337, -0.207743},
 	{-0.67799, 1.95279, -0.193003, -1.84183, -0.662046},
@@ -620,26 +649,50 @@ void CollectionFunctionTest() {
 	{-0.6051230029995152,0,0,0,0} };
 
 	a = a * blaze::trans(a);
-	
-	SolverRes<double>SolveA = lapld.wrapInterface(cholesky<double>, a);
+
+	vector<size_t> pcgits;
+	SolverB<double>SolveA = lapld.wrapInterface(cholesky<double>, a, pcgits);
 
 	DynamicVector<double> b1(b.rows());
 
 	for (int i = 0; i < b1.size(); i++)
 		b1[i] = b(i, 0);
 
+	DynamicVector<double> vvv = SolveA(b);
+
 	double l2 = norm(a*SolveA(b) - b1);
 
-	cout << "norm(ax-b)=" << l2;
+	cout << "norm(ax-b)=" << l2 << endl;
+
+	assert(abs(l2) < 2e-16);
+
+	//Test chol_sddm 
+	SolverA<double> ch_sddm = lapld.chol_sddm();
+	SubSolver<double> SolveA1 = ch_sddm(a);
+
+	l2 = norm(a*SolveA1(b) - b1);
+
+	cout << "norm2(ax-b)=" << l2 << endl;
 
 	assert(abs(l2) < 2e-16);
 	
-	//CompressedMatrix<double, blaze::columnMajor> x=SolveA
-	//auto solvea = lapld.wrapInterface([=](CompressedMatrix<double, blaze::columnMajor> &X) { return lapld.cholesky(X);});
+	//Test isConnected function
 
-	//solvea = wrapInterface(X->cholesky(X, Val(true)), a, maxits = 100, verbose = true)
+	CompressedMatrix<int, blaze::columnMajor> m10(10, 10);
+	m10(1, 0) = 1;	m10(2, 0) = 1;	m10(0, 1) = 1;	m10(5, 1) = 1;	m10(8, 1) = 1;
+	m10(0, 2) = 1;	m10(5, 3) = 1;	m10(7, 4) = 1;	m10(1, 5) = 1;	m10(3, 5) = 1;
+	m10(8, 5) = 1;	m10(4, 7) = 1;	m10(8, 7) = 1;	m10(1, 8) = 1;	m10(5, 8) = 1;
+	m10(7, 8) = 1;
 
-	// norm = 7.2165330597487115e-16
+	assert(!lapl.isConnected(m10));
+
+	CompressedMatrix<int, blaze::columnMajor>
+		MeanA{ {0, 1, 0, 1, 0, 0, 0, 0, 0}, {1, 0, 1, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 0, 0, 0},
+			{1, 0, 0, 0, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
+			{0, 0, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
+
+	cout << "mean = "<< lapld.mean(MeanA) << endl;
+
 }
 
 	
