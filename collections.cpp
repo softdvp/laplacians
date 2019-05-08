@@ -26,13 +26,13 @@ void dump_ijv(int ijvn, IJV<int> &ijv) {
 
 }
 
-const DynamicVector<DynamicVector<size_t>>vecToComps(DynamicVector<size_t> &compvec) {
+const vector<vector<size_t>> vecToComps(vector<size_t> &compvec) {
 		
-		size_t nc = blaze::max(compvec);
+		size_t nc = *max_element(compvec.begin(), compvec.end());
 
-		DynamicVector<DynamicVector<size_t>> comps(nc);
+		vector<vector<size_t>> comps(nc);
 
-		DynamicVector<size_t> sizes(nc, 0);
+		vector<size_t> sizes(nc, 0);
 
 		for(size_t i:compvec) 
 			sizes[i-1]++;
@@ -40,7 +40,7 @@ const DynamicVector<DynamicVector<size_t>>vecToComps(DynamicVector<size_t> &comp
 		for(size_t i = 0; i < nc; i++)
 			comps[i].resize(sizes[i]);
 
-		DynamicVector<size_t>ptrs(nc, 0);
+		vector<size_t>ptrs(nc, 0);
 
 		for (size_t i = 0; i < compvec.size(); i++)
 		{

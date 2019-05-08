@@ -302,14 +302,14 @@ void CollectionTest() {
 	//cout << "\n\nCall function componets():\n";
 
 	SparseMatrixCSC<int> sprs(m10);
-	DynamicVector<size_t> comp = lapl.components(sprs);
+	vector<size_t> comp = lapl.components(sprs);
 	
 	/*for (int i = 0; i < comp.size(); i++)
 		cout << comp[i] << " ";*/
 
 	//cout << endl;
 
-	DynamicVector<size_t>comp1 = lapl.components(m10);
+	vector<size_t>comp1 = lapl.components(m10);
 
 	/*for (int i = 0; i < comp1.size(); i++)
 		cout << comp1[i] << " ";*/
@@ -546,9 +546,9 @@ void CollectionFunctionTest() {
 
 	//Test vecToComps() function
 
-	DynamicVector<size_t> V{ 1, 2, 1, 2, 3, 3, 3 };
+	vector<size_t> V{ 1, 2, 1, 2, 3, 3, 3 };
 
-	DynamicVector<DynamicVector<size_t>>comp = vecToComps(V);
+	vector<vector<size_t>>comp = vecToComps(V);
 
 	//cout << comp;
 

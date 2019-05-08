@@ -300,7 +300,7 @@ DynamicVector<Tv>dynvec(const vector<Tv> &v) {
 	return res;
 }
 
-const DynamicVector<DynamicVector<size_t>> vecToComps(DynamicVector<size_t> &compvec);
+const vector<vector<size_t>> vecToComps(vector<size_t> &compvec);
 
 template <typename Tv>
 class Factorization {
@@ -562,11 +562,11 @@ public:
 	}
 
 	// Returns vector where comp[i]=component number
-	DynamicVector<size_t> components(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
+	vector<size_t> components(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
 		size_t n = mat.rows();
 
-		DynamicVector<size_t> order(n, 0);
-		DynamicVector<size_t> comp(n, 0);
+		vector<size_t> order(n, 0);
+		vector<size_t> comp(n, 0);
 
 		size_t color = 0;
 
@@ -597,11 +597,11 @@ public:
 		return comp;
 	}
 
-	DynamicVector<size_t> components(const SparseMatrixCSC<Tv> &mat) {
+	vector<size_t> components(const SparseMatrixCSC<Tv> &mat) {
 		size_t n = mat.n;
 
-		DynamicVector<size_t> order(n, 0);
-		DynamicVector<size_t> comp(n, 0);
+		vector<size_t> order(n, 0);
+		vector<size_t> comp(n, 0);
 
 		size_t color = 0;
 
@@ -911,7 +911,7 @@ public:
 
 	//Apply the ith solver on the ith component
 
-	SolverB<Tv> BlockSolver(const DynamicVector<DynamicVector<size_t>> &comps, const vector<SubSolver<Tv>> &solvers, 
+	SolverB<Tv> BlockSolver(const vector<vector<size_t>> &comps, const vector<SubSolver<Tv>> &solvers, 
 		vector<size_t>& pcgIts,	float tol = 1e-6F, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, 
 		bool verbose = false) {
 
@@ -927,7 +927,7 @@ public:
 			DynamicVector<Tv>x(b.size(), 0);
 
 			for (size_t i = 0; i < comps.size; ++i) {
-				DynamicVector<size_t> ind = comps[i];
+				vector<size_t> ind = comps[i];
 				DynamicVector<Tv> bi = index(b, ind);
 				DynamicVector<Tv> solution = (solvers[i])(bi, pcgTmp, tol, maxits, maxtime, verbose);
 
@@ -1042,7 +1042,9 @@ public:
 		if (!mat.rows())
 			return false;
 
-		return blaze::max(components(mat)) == 1;
+		vector<size_t> cm = components(mat);
+		return *max_element(cm.begin(), cm.end()) == 1;
+
 	}
 	
 //	lap function analog. Create a Laplacian matrix from an adjacency matrix.
@@ -1186,12 +1188,12 @@ public:
 			return s;
 		}
 		else {
-			DynamicVector<DynamicVector<size_t>>comps = vecToComps(co);
+			vector<vector<size_t>>comps = vecToComps(co);
 
 			vector<SolverB<Tv>>solvers;
 
 			for (size_t i = 0; i < comps.size(); ++i) {
-				DynamicVector<size_t> ind = comps[i];
+				vector<size_t> ind = comps[i];
 
 				CompressedMatrix<Tv> asub = index(a, ind, ind);
 
