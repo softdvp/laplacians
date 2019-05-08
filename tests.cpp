@@ -247,9 +247,12 @@ void IJVtests() {
 
 	cout << "\nTest IJV constructor with Dynamic Vectors:\n";
 
-	DynamicVector<int>VI{ 1, 1, 3, 2 }, VJ{ 0, 1, 1, 2 }, VV{ 5, 8, 6, 3 };
+	DynamicVector<int> VV{ 5, 8, 6, 3 };
+	
+	vector<size_t> VI{ 1, 1, 3, 2 }, VJ{ 0, 1, 1, 2 };
 
 	IJV<int> ijv5(4, 4, VI, VJ, VV);
+
 	dump_ijv(5, ijv5);
 
 	assert(ijv5 == ijv0);
@@ -553,7 +556,7 @@ void CollectionFunctionTest() {
 
 	CompressedMatrix<int, blaze::columnMajor> Ma{ {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
 
-	DynamicVector<size_t> Idx1{ 0, 1 }, Idx2{ 1, 2 };
+	vector<size_t> Idx1{ 0, 1 }, Idx2{ 1, 2 };
 
 	CompressedMatrix<int, blaze::columnMajor> Midx = lapl.index(Ma, Idx1, Idx2);
 
@@ -561,7 +564,7 @@ void CollectionFunctionTest() {
 
 	assert(Midx(0, 0) == 2 && Midx(0, 1) == 3 && Midx(1, 0) == 5 && Midx(1, 1) == 6);
 
-	DynamicVector<size_t> Idx0{ 0 };
+	vector<size_t> Idx0{ 0 };
 
 	Midx = lapl.index(Ma, Idx1, Idx0);
 
@@ -576,15 +579,22 @@ void CollectionFunctionTest() {
 
 	DynamicVector<int> vout(10, 0), vin{ 3, 5, 9 };
 
-	DynamicVector<size_t> idx{ 1, 2, 6 };
+	vector<size_t> idx{ 1, 2, 6 };
 
 	lapl.index(vout, idx, vin);
 
-	//cout << vout << endl;
+	cout << "vout[idx]=vin\n" << vout << endl;
 
 	assert(vout[1] == 3 && vout[2] == 5 && vout[6] == 9);
 
-	//cout << a << endl << b << endl;
+	idx = { 1, 2 };
+	cout << vout << endl;
+
+	vout = lapl.index(vin, idx);
+
+	cout << "vout=vin[idx]\n" << vout << endl;
+
+	assert(vout[0] == 5 && vout[1] == 9);
 
 	// Cholesky decomposition
 	// Test cholesky function
@@ -651,7 +661,7 @@ void CollectionFunctionTest() {
 	a = a * blaze::trans(a);
 
 	vector<size_t> pcgits;
-	SolverB<double>SolveA = lapld.wrapInterface(cholesky<double>, a, pcgits);
+	SolverBMat<double>SolveA = lapld.wrapInterfaceMat(cholesky<double>, a, pcgits);
 
 	DynamicVector<double> b1(b.rows());
 
@@ -667,8 +677,8 @@ void CollectionFunctionTest() {
 	assert(abs(l2) < 2e-16);
 
 	//Test chol_sddm 
-	SolverA<double> ch_sddm = lapld.chol_sddm();
-	SubSolver<double> SolveA1 = ch_sddm(a);
+	SolverAMat<double> ch_sddm = lapld.chol_sddm_mat();
+	SubSolverMat<double> SolveA1 = ch_sddm(a);
 
 	l2 = norm(a*SolveA1(b) - b1);
 
@@ -693,6 +703,26 @@ void CollectionFunctionTest() {
 
 	cout << "mean = "<< lapld.mean(MeanA) << endl;
 
+	SolverB<double>SolveAv = lapld.wrapInterface(cholesky<double>, a, pcgits);
+
+	b1 = { 1.064160977905516, -0.3334067812850509, 0.7919292830316926, 0.01651278833545206, -0.6051230029995152 };
+
+	double l2v = norm(a*SolveAv(b1) - b1);
+
+	cout << "norm(ax-b)=" << l2v << endl;
+
+	assert(abs(l2v) < 2e-16);
+
+	//Test chol_sddm for vector
+
+	SolverA<double> ch_sddmv = lapld.chol_sddm();
+	SubSolver<double> SolveA1v = ch_sddmv(a);
+
+	l2 = norm(a*SolveA1v(b1) - b1);
+
+	cout << "norm2(ax-b)=" << l2 << endl;
+
+	assert(abs(l2) < 2e-16);
 }
 
 	
