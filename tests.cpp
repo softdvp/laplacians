@@ -363,7 +363,7 @@ void CollectionTest() {
 
 	//cout << endl << endl << "diag(C)=\n";
 
-	vector<int> v1 = lapl.diag(C, 1);
+	DynamicVector<int> v1 = lapl.diag(C, 1);
 
 	/*for (int i = 0; i < v1.size(); i++) {
 		cout << v1[i] << " ";
@@ -374,7 +374,7 @@ void CollectionTest() {
 
 	//Test function Diagonal()
 	
-	DynamicVector<int> dv=dynvec(v1);
+	DynamicVector<int> dv=v1;
 	
 	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(dv);
 
@@ -498,11 +498,11 @@ void CollectionTest() {
 }
 
 void CollectionFunctionTest() {
-	
+
 	Laplacians<int> lapl;
-	
+
 	//Test product_graph() function
-		
+
 	CompressedMatrix<int, blaze::columnMajor>
 		GrA{ {0, 1, 0, 1, 0, 0, 0, 0, 0}, {1, 0, 1, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 0, 0, 0},
 			{1, 0, 0, 0, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
@@ -519,7 +519,7 @@ void CollectionFunctionTest() {
 
 	IJV<int>IJVA(GrA), IJVB(GrB);
 
-  	IJV<int> ijv0 = lapl.product_graph(IJVA, IJVB);
+	IJV<int> ijv0 = lapl.product_graph(IJVA, IJVB);
 	/*cout << "\n\nproduct_graph(B, A)=\n";
 	dump_ijv(0, ijv0);*/
 	assert(ijv0.i[2] == 22 && ijv0.i[ijv0.i.size() - 3] == 35 && ijv0.j[2] == 18 && ijv0.j[ijv0.j.size() - 3] == 71);
@@ -552,7 +552,7 @@ void CollectionFunctionTest() {
 
 	//cout << comp;
 
-	assert(comp[0][1] == 2 && comp[1][1] == 3 && comp[2][1]==5);
+	assert(comp[0][1] == 2 && comp[1][1] == 3 && comp[2][1] == 5);
 
 	CompressedMatrix<int, blaze::columnMajor> Ma{ {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
 
@@ -610,7 +610,7 @@ void CollectionFunctionTest() {
 	try {
 		f = cholesky(ChA);
 	}
-	catch(std::runtime_error ex) {
+	catch (std::runtime_error ex) {
 		cout << ex.what();
 	}
 
@@ -636,9 +636,9 @@ void CollectionFunctionTest() {
 
 	//cout <<"X=\n" << x << endl;
 	//cout << "B=\n" << B << endl;
-		
-	assert(abs(B[0] - X(0,0))<1e-6 && abs(B[1] - X(1, 0)) < 1e-6 && abs(B[2] - X(2, 0)) < 1e-6);
-	
+
+	assert(abs(B[0] - X(0, 0)) < 1e-6 && abs(B[1] - X(1, 0)) < 1e-6 && abs(B[2] - X(2, 0)) < 1e-6);
+
 	//Test calculation error
 
 	//Create random matrices A and B
@@ -652,9 +652,9 @@ void CollectionFunctionTest() {
 	};
 
 	CompressedMatrix<double, blaze::columnMajor> b
-	{ {1.064160977905516,0,0,0,0}, 
-	{-0.3334067812850509,0,0,0,0},  
-	{0.7919292830316926,0,0,0,0}, 
+	{ {1.064160977905516,0,0,0,0},
+	{-0.3334067812850509,0,0,0,0},
+	{0.7919292830316926,0,0,0,0},
 	{0.01651278833545206,0,0,0,0},
 	{-0.6051230029995152,0,0,0,0} };
 
@@ -672,7 +672,7 @@ void CollectionFunctionTest() {
 
 	double l2 = norm(a*SolveA(b) - b1);
 
-	cout << "norm(ax-b)=" << l2 << endl;
+	//cout << "norm(ax-b)=" << l2 << endl;
 
 	assert(abs(l2) < 2e-16);
 
@@ -682,10 +682,10 @@ void CollectionFunctionTest() {
 
 	l2 = norm(a*SolveA1(b) - b1);
 
-	cout << "norm2(ax-b)=" << l2 << endl;
+	//cout << "norm2(ax-b)=" << l2 << endl;
 
 	assert(abs(l2) < 2e-16);
-	
+
 	//Test isConnected function
 
 	CompressedMatrix<int, blaze::columnMajor> m10(10, 10);
@@ -701,7 +701,7 @@ void CollectionFunctionTest() {
 			{1, 0, 0, 0, 0, 0, 1, 1, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0}, {0, 0, 0, 0, 1, 0, 0, 0, 1},
 			{0, 0, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
 
-	cout << "mean = "<< lapld.mean(MeanA) << endl;
+	//cout << "mean = " << lapld.mean(MeanA) << endl;
 
 	SolverB<double>SolveAv = lapld.wrapInterface(cholesky<double>, a, pcgits);
 
@@ -709,7 +709,7 @@ void CollectionFunctionTest() {
 
 	double l2v = norm(a*SolveAv(b1) - b1);
 
-	cout << "norm(ax-b)=" << l2v << endl;
+	//cout << "norm(ax-b)=" << l2v << endl;
 
 	assert(abs(l2v) < 2e-16);
 
@@ -720,9 +720,86 @@ void CollectionFunctionTest() {
 
 	l2 = norm(a*SolveA1v(b1) - b1);
 
-	cout << "norm2(ax-b)=" << l2 << endl;
+	//cout << "norm2(ax-b)=" << l2 << endl;
 
 	assert(abs(l2) < 2e-16);
+
+	/* 
+	Create 4th component graph of 10 vertices to test
+	0, 0, 0, 0, 0, 0, 0, 0, 1, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 1, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+	0, 0, 0, 0, 0, 1, 0, 0, 0, 0
+	0, 0, 0, 0, 1, 0, 0, 1, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 1, 0
+	0, 0, 0, 0, 0, 1, 0, 0, 0, 0
+	1, 0, 1, 0, 0, 0, 1, 0, 0, 0
+	0, 0, 0, 1, 0, 0, 0, 0, 0, 0
+
+	*/
+	CompressedMatrix<double, blaze::columnMajor> GraphA10({
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
+		{ 0, 0, 0, 0, 0, 1, 0, 0, 0, 0 },
+		{ 0, 0, 0, 0, 1, 0, 0, 1, 0, 0 },
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 },
+		{ 0, 0, 0, 0, 0, 1, 0, 0, 0, 0 },
+		{ 1, 0, 1, 0, 0, 0, 1, 0, 0, 0 },
+		{ 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 }
+		});
+
+	DynamicVector<double> b10{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+
+	//Test lapWrapComponents
+
+	SolverB<double> Solver10 = lapld.lapWrapComponents(ch_sddmv, GraphA10, pcgits);
+
+	DynamicVector<double> x10 = Solver10(b10);
+
+	//cout << "x= \n" << trans(x10) << endl;
+	assert(abs(x10[0] - (-3)) < 1e-6 && abs(x10[1]) < 1e-6 && abs(x10[4] - (-1.444444)) < 1e-6);
+
+	//Test lapWrapSDDM
+	
+	SolverA<double> lap_sddmv = lapld.lapWrapSDDM(lapld.chol_sddm());
+	
+	SubSolver<double> SolveA11 = lap_sddmv(GraphA10);
+
+	x10 = SolveA11(b10);
+	//cout << "\nx= \n" << trans(x10) << endl;
+	assert(abs(x10[0] - (-3)) < 1e-6 && abs(x10[1]) < 1e-6 && abs(x10[4] - (-1.444444)) < 1e-6);
+
+	// Test adj function
+
+	// 1th component graph
+
+	CompressedMatrix<double, blaze::columnMajor> Graph1th{ 
+		{0, 0, 0, 1, 1}, 
+		{0, 0, 1, 0, 0},
+		{0, 1, 0, 1, 1},
+		{1, 0, 1, 0, 0},
+		{1, 0, 1, 0, 0}
+	};
+
+	CompressedMatrix<double, blaze::columnMajor>lapGraph = lapld.lap(Graph1th);
+
+	pair<CompressedMatrix<double, blaze::columnMajor>, DynamicVector<double>> Adj = lapld.adj(lapGraph);
+
+	//cout << "\nadj=\n" << Adj.first << endl;
+	assert(abs(lapld.mean(Graph1th) - lapld.mean(Adj.first)) < 1e-6);
+	assert(abs(lapld.mean(Adj.second)) < 1e-6);
+
+	// Test extendMatrix function
+
+	DynamicVector<double> d{ 10, 20, -30, 40, 50 };
+	CompressedMatrix<double, blaze::columnMajor> ExtM = lapld.extendMatrix(lapGraph, d);
+
+	cout << ExtM << endl;
+
+	assert(abs(round(ExtM(0, 0))) == 2 && abs(round(ExtM(2, 2))) == 3 && abs(round(ExtM(5, 0))) == 10 && abs(round(ExtM(2, 5))) == 0);
 }
 
 	

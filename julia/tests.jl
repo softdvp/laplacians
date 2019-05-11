@@ -1,8 +1,12 @@
+
+using Laplacians
+using SparseArrays
+using Statistics
 include("pcg_1.jl")
 include("collection.jl")
-using Laplacians
 include("solverInterface.jl")
-using SparseArrays
+
+
 
 """
 #bzbeta! test
@@ -146,11 +150,11 @@ dump(IJ)
 # Test product_graph
 
 #Create two graph matrices of 9 vertices
-"""
+
 GrA=[0 1 0 1 0 0 0 0 0; 1 0 1 0 1 0 0 0 0; 0 1 0 0 0 0 0 0 0;
 	 1 0 0 0 0 0 1 1 0; 0 1 0 0 0 1 0 0 0; 0 0 0 0 1 0 0 0 1;
 	 0 0 0 1 0 0 0 1 0; 0 0 0 1 0 0 1 0 0; 0 0 0 0 0 1 0 0 0]
-
+"""
 GrB=[0 0 0 0 1 0 0 0 0; 0 0 1 1 0 0 0 0 0; 0 1 0 0 0 1 0 0 0;
 	 0 1 0 0 0 0 0 1 0; 1 0 0 0 0 1 1 0 0; 0 0 1 0 1 0 0 0 1;
 	 0 0 0 0 1 0 0 0 0; 0 0 0 1 0 0 0 0 0; 0 0 0 0 0 1 0 0 0]
@@ -197,8 +201,6 @@ println("X=", X)
 Bx=A*X
 println("Bx=", Bx)
 
-"""
-
 a=[ -0.356543 -0.136045 -1.93844 1.18337 -0.207743;
     -0.67799 1.95279 -0.193003 -1.84183 -0.662046;
      2.61283 1.51118 0.672955 -0.840613 2.01147;
@@ -227,8 +229,50 @@ display(ax_b)
 
 println("\n\nnorm(ax-b)=", norm(ax_b))
 
-"""
 f = wrapInterface(X->cholesky(X,Val(true)))
 solvea = f(a, maxits=1000, maxtime = 1)
 println(norm(a*solvea(b, verbose=false, maxtime = 10)-b))
 """
+GraphA10=
+    [0. 0 0 0 0 0 0 0 1 0;
+     0 0 0 0 0 0 0 0 0 0;
+     0 0 0 0 0 0 0 0 1 0;
+     0 0 0 0 0 0 0 0 0 1;
+     0 0 0 0 0 1 0 0 0 0;
+     0 0 0 0 1 0 0 1 0 0;
+     0 0 0 0 0 0 0 0 1 0;
+     0 0 0 0 0 1 0 0 0 0;
+     1 0 1 0 0 0 1 0 0 0;
+     0 0 0 1 0 0 0 0 0 0]
+
+#display(GraphA10)
+
+sol=lapWrapComponents(chol_sddm, sparse(GraphA10))
+
+b10=[1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]
+x10=sol(b10)
+#display(x10)
+# println(components(sparse(GrA)))
+
+GraphA=[ 0 0 0 1 1;
+		 0 0 1 0 0;
+		 0 1 0 1 1;
+		 1 0 1 0 0;
+		 1 0 1 0 0 ]
+
+lapGraphA=lap(sparse(GraphA))
+adjGraphA=adj(lapGraphA)
+
+display(Matrix(adjGraphA[1]))
+display(adjGraphA[2])
+
+ExtM=extendMatrix(lapGraphA, [10.0,20.,30.,40., 50.])
+display(Matrix(ExtM))
+
+
+#display(Matrix(lapGraphA))
+#display(lapWrapComponents(chol_sddm, lapGraphA))
+
+#sol=lapWrapComponents(chol_sddm, sparse(GrA))
+#x10=sol(b10)
+#display(x10)

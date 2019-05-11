@@ -341,11 +341,13 @@ public:
 	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams()) {
+
 		return Solver(b, pcgIts, tol, maxits, maxtime, verbose, params);
 	}
 
 	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b){
 		vector<size_t> pcgIts;
+		
 		return Solver(b, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
 	}
 };
@@ -391,7 +393,6 @@ Factorization<Tv> cholesky(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
 	return F;
 }
 
-
 //  Solvers for A*x=b where b is a vector 
 
 //Result of wrappers
@@ -402,6 +403,7 @@ using SolverB = function<DynamicVector<Tv>(const DynamicVector<Tv>&)>;
 
 //Result of SolverA functor
 //Convert SolverA to a function with 1 paramater B - SolverB
+
 template <typename Tv>
 using SubSolverFunc = std::function <DynamicVector<Tv>(const DynamicVector<Tv>&, vector<size_t>&, float, double,
 	double, bool, ApproxCholParams)>;
@@ -410,6 +412,8 @@ template <typename Tv>
 class SubSolver {
 	SubSolverFunc<Tv> Solver;
 public:
+	SubSolver(){}
+
 	SubSolver(SubSolverFunc<Tv> Asolver) : Solver(Asolver) {};
 
 	SubSolver(SolverB<Tv> solver) {
@@ -421,6 +425,12 @@ public:
 			return solver(b);
 		};
 	}
+
+	/*SubSolver &operator=(const SubSolver &s) {
+		Solver = s.Solver;
+
+		return *this;
+	}*/
 
 	DynamicVector<Tv>operator()(const DynamicVector<Tv> &b, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
@@ -457,6 +467,13 @@ public:
 		return Solver(a, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
 	}
 };
+
+template <typename Tv>
+DynamicVector<Tv> nullSolver(const DynamicVector<Tv>& a, vector<size_t>& pcg, float f, double d,
+	double d1, bool b, ApproxCholParams prm) {
+
+	return DynamicVector<Tv>(1, 0);
+}
 
 //Cholesky-based Substitution
 
@@ -701,14 +718,13 @@ public:
 	}
 
 
-	vector<Tv> diag(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t diag_n = 0) {
-
-		vector<Tv> resv;
+	DynamicVector<Tv> diag(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t diag_n = 0) {
 
 		size_t it = A.columns() - diag_n;
+		DynamicVector<Tv> resv(it);
 
 		for (size_t i = 0; i < it; ++i) {
-			resv.push_back(A(i, diag_n + i));
+			resv[i] = (A(i, diag_n + i));
 		}
 
 		return resv;
@@ -764,7 +780,7 @@ public:
 		CompressedMatrix<Tv, blaze::columnMajor>ap;
 
 		ap = pow(A, k);
-		ap = ap - Diagonal(dynvec(diag(ap)));
+		ap = ap - Diagonal(diag(ap));
 
 		return ap;
 	}
@@ -784,39 +800,38 @@ public:
 		for (size_t i = 0; i < a.n; ++i)
 			ancollect[i] = (Tv)i;
 
-		//Convert vector<size_t> to vector<Tv>
-		vector<Tv>ait(a.i.size());
+		DynamicVector<Tv>ait(a.i.size());
 
 		for (size_t i = 0; i < a.i.size(); ++i) {
 			ait[i] = (Tv)a.i[i] + 1;
 		}
 
-		vector<Tv>ajt(a.j.size());
+		DynamicVector<Tv>ajt(a.j.size());
 
 		for (size_t i = 0; i < a.j.size(); ++i) {
 			ajt[i] = (Tv)a.j[i] + 1;
 		}
 
-		vector<Tv>bit(b.i.size());
+		DynamicVector<Tv>bit(b.i.size());
 
 		for (size_t i = 0; i < b.i.size(); ++i) {
 			bit[i] = (Tv)(b.i[i] /*- 1*/);
 		}
 
-		vector<Tv>bjt(b.j.size());
+		DynamicVector<Tv>bjt(b.j.size());
 
 		for (size_t i = 0; i < b.j.size(); ++i) {
 			bjt[i] = (Tv)(b.j[i] /*- 1*/);
 		}
 
 		DynamicVector<Tv> a_edge_from = kron(annzOnes, (Tv)a.n*bncollect);
-		DynamicVector<Tv> ai = a_edge_from + kron(dynvec(ait), bnOnes);
-		DynamicVector<Tv> aj = a_edge_from + kron(dynvec(ajt), bnOnes);
+		DynamicVector<Tv> ai = a_edge_from + kron(ait, bnOnes);
+		DynamicVector<Tv> aj = a_edge_from + kron(ajt, bnOnes);
 		DynamicVector<Tv> av = kron(a.v, bnOnes);
 
 		DynamicVector<Tv> b_edge_from = kron(ancollect, bnnzOnes);
-		DynamicVector<Tv> bi = b_edge_from + kron(anOnes, dynvec(bit)*(Tv)a.n);
-		DynamicVector<Tv> bj = b_edge_from + kron(anOnes, dynvec(bjt)*(Tv)a.n);
+		DynamicVector<Tv> bi = b_edge_from + kron(anOnes, bit*(Tv)a.n);
+		DynamicVector<Tv> bj = b_edge_from + kron(anOnes, bjt*(Tv)a.n);
 		DynamicVector<Tv> bv = kron(anOnes, b.v);
 
 		for (size_t i = 0; i < ai.size(); ++i) {
@@ -855,9 +870,9 @@ public:
 		return grid2(n, n);
 	}
 
-	// Create Laplacian matrix
+	// Create a Laplacian matrix from an adjacency matrix. We might want to do this differently, say by enforcing symmetry
 
-	CompressedMatrix<Tv, blaze::columnMajor>lap(CompressedMatrix<Tv, blaze::columnMajor> A) {
+	CompressedMatrix<Tv, blaze::columnMajor> lap(CompressedMatrix<Tv, blaze::columnMajor> A) {
 		DynamicVector<Tv> ones(A.rows(), 1);
 		CompressedMatrix<Tv, blaze::columnMajor>Dg = Diagonal(A*ones);
 		CompressedMatrix<Tv, blaze::columnMajor>Res = Dg - A;
@@ -866,10 +881,6 @@ public:
 	}
 	
 	//	lapWrapComponents function
-
-	DynamicVector<Tv> nullSolver(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
-		return DynamicVector<Tv>(1, 0);
-	}
 
 	// vector index of matrix
 	CompressedMatrix<Tv> index(const CompressedMatrix <Tv> &A, const vector<size_t> &idx1, const vector<size_t> &idx2) {
@@ -911,13 +922,15 @@ public:
 
 	//Apply the ith solver on the ith component
 
-	SolverB<Tv> BlockSolver(const vector<vector<size_t>> &comps, const vector<SubSolver<Tv>> &solvers, 
+	SolverB<Tv> BlockSolver(const vector<vector<size_t>> &comps, vector<SubSolver<Tv>> &solvers, 
 		vector<size_t>& pcgIts,	float tol = 1e-6F, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, 
 		bool verbose = false) {
 
-		return SolverB<Tv>([=, &comps, &solvers, pcgIts](DynamicVector<Tv> &b) {
+		return SolverB<Tv>([=, &pcgIts](const DynamicVector<Tv> &b) {
 
 			vector<size_t> pcgTmp;
+
+			vector<SubSolver<Tv>> l_solvers = solvers;
 
 			if (pcgIts.size()) {
 				pcgIts[0] = 0;
@@ -926,10 +939,10 @@ public:
 
 			DynamicVector<Tv>x(b.size(), 0);
 
-			for (size_t i = 0; i < comps.size; ++i) {
+			for (size_t i = 0; i < comps.size(); ++i) {
 				vector<size_t> ind = comps[i];
 				DynamicVector<Tv> bi = index(b, ind);
-				DynamicVector<Tv> solution = (solvers[i])(bi, pcgTmp, tol, maxits, maxtime, verbose);
+				DynamicVector<Tv> solution = (l_solvers[i])(bi, pcgTmp, tol, maxits, maxtime, verbose);
 
 				index(x, ind, solution);
 
@@ -1056,10 +1069,10 @@ public:
 
 		if (blaze::min(a) < 0) {
 			 af = blaze::abs(a);
-			af = af - Diagonal(dynvec(diag(af)));
+			af = af - Diagonal(diag(af));
 		} else 
-			if (blaze::sum(blaze::abs(dynvec(diag(a)))) > 0) {
-				af = a - Diagonal(dynvec(diag(a)));
+			if (blaze::sum(blaze::abs(diag(a))) > 0) {
+				af = a - Diagonal(diag(a));
 			}
 			else {
 				af = a;
@@ -1129,55 +1142,73 @@ public:
 		return blaze::sum(v) / v.size();
 	}
 
-	SolverB<Tv> lapWrapConnected(const SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
+	SolverB<Tv> lapWrapConnected(SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams()) {
 
 		CompressedMatrix<Tv, blaze::columnMajor> la = forceLap(a);
 		size_t N = la.rows();
 
-		size_t ind = findmax(dynvec(diag(la))).second;
+		size_t ind = findmax(diag(la)).second;
 
-		vector<Tv> leave;
+		vector<size_t> leave;
 
+		// Delete the row with the max value
 		for (size_t i = 0; i < N; ++i) {
 			if (i != ind)
 				leave.push_back(i);
 		}
-
 		
 		CompressedMatrix<Tv, blaze::columnMajor>lasub = index(la, leave, leave);
 		SubSolver<Tv> subSolver = solver(lasub, pcgIts, tol, maxits, maxtime, verbose, params);
 
-		return SolverB<Tv>([=, &pcgIts, &leave](const DynamicVector<Tv> &b) {
-			
-			DynamicVector<Tv, blaze::columnMajor> bs = index(b, leave) - mean(b);
+		return SolverB<Tv>([=, &pcgIts](const DynamicVector<Tv> &b) {
+			SubSolver<Tv> l_subSolver = subSolver;
+			DynamicVector<Tv> bs = index(b, leave) - DynamicVector<Tv>(leave.size(), mean(b));
 
-			DynamicVector<Tv> xs = subSolver(bs, pcgIts, tol, maxits, maxtime, verbose);
+			DynamicVector<Tv> xs = l_subSolver(bs, pcgIts, tol, maxits, maxtime, verbose);
 
 			DynamicVector<Tv> x(b.size(), 0);
 			index(x, leave, xs);
-			x = x - mean(x);
+			x = x - DynamicVector<Tv>(x.size(), mean(x));
 
 			return x;
 
 		});
 	}
 
-	/*SolverB<Tv> lapWrapComponents(const SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
+	SolverA<Tv> lapWrapConnected(const SolverA<Tv> solver) {
+		return SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+			double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+			const ApproxCholParams params = ApproxCholParams())
+		{
+			return lapWrapConnected(solver, a, pcgIts, tol, maxits, maxtime, verbose, params);
+		});
+	}
+
+	/*
+	function lapWrapConnected(solver::Function)
+	    f(a::AbstractArray; tol=1e-6, maxits=Inf, maxtime=Inf, verbose=false, pcgIts=Int[], params...) = lapWrapConnected(solver, a; tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgIts, params... )
+		return f
+	end
+
+	*/
+
+	SolverB<Tv> lapWrapComponents(SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
 	{
 		auto t1 = high_resolution_clock::now();
 
 		if (!testZeroDiag(a)) {
-			a = a - Diagonal(diag(a));
+//			a = a - Diagonal(diag(a));
 		}
 
-		DynamicVector<Tv> co = components(a);
+		vector<size_t> co = components(a);
 
-		if (blaze::max(co) == 1) {
-			SolverB<Tv> s = solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
+		if (*max_element(co.begin(), co.end()) == 1) {
+
+			SubSolver<Tv> s=solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
 
 			if (verbose) {
 				auto t2 = high_resolution_clock::now();
@@ -1190,95 +1221,140 @@ public:
 		else {
 			vector<vector<size_t>>comps = vecToComps(co);
 
-			vector<SolverB<Tv>>solvers;
+			vector<SubSolver<Tv>>solvers;
 
 			for (size_t i = 0; i < comps.size(); ++i) {
+
 				vector<size_t> ind = comps[i];
 
 				CompressedMatrix<Tv> asub = index(a, ind, ind);
 
-				SolverB<Tv> subSolver;
+				SubSolver<Tv> subSolver;
 
 				if (ind.size() == 1) {
-					subSolver = nullSolver;
+					
+					subSolver = SubSolver<Tv>(nullSolver<Tv>);
 				}
 				else
 					if (ind.size() < 50) {
+
 						vector<size_t>pcgits;
-						subSolver = lapWrapConnected(chol_sddm, asub, pcgits);
+						subSolver = lapWrapConnected(chol_sddm(), asub, pcgits);
 					}
 					else {
-						subSolver = solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
+						subSolver=solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
 					}
+
 				solvers.push_back(subSolver);
 			}
 
 			if (verbose) {
-				if (verbose) {
-					auto t2 = high_resolution_clock::now();
-					auto msec = duration_cast<milliseconds>(t2 - t1).count();
-					std::cout << "Solver build time: " << msec << " ms.";
-				}
+				auto t2 = high_resolution_clock::now();
+				auto msec = duration_cast<milliseconds>(t2 - t1).count();
+				std::cout << "Solver build time: " << msec << " ms.";
 			}
 
 			return BlockSolver(comps, solvers, pcgIts, tol, maxits, maxtime, verbose);
 		}
-	}*/
 
-};
-
-
-
-
-/*SolverA<Tv> lapWrapComponents(const SolverA<Tv> solver) {
-	return SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
-		double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-		const ApproxCholParams params = ApproxCholParams())
-	{
-		return lapWrapComponents(solver, a, pcgIts, tol, maxits, maxtime, verbose, params);
-	});
-}*/
-
-
-
-/*SolverB wrapInterface(const SolverA solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, const float tol = 0,
-	const double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-	vector<size_t>& pcgIts = vector<size_t>(), const ApproxCholParams params = ApproxCholParams())
-{
-	auto t1 = high_resolution_clock::now();
-
-	SolverB sol = solver(a);
-
-	if (verbose) {
-		auto t2 = high_resolution_clock::now();
-		auto msec = duration_cast<milliseconds>(t2 - t1).count();
-		std::cout << "Solver build time: " << msec << " ms.";
 	}
 
-	return [=, &pcgIts](DynamicMatrix<Tv, blaze::columnMajor> &b) {
+	SolverA<Tv> lapWrapComponents(const SolverA<Tv> solver) {
+		return SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+			double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+			const ApproxCholParams params = ApproxCholParams())
+		{
+			return lapWrapComponents(solver, a, pcgIts, tol, maxits, maxtime, verbose, params);
+		});
+	}
 
-		if (pcgIts.size())
-			pcgIts[0] = 0;
+	SolverA<Tv> lapWrapSDDM(SolverA<Tv> sddmSolver) {
+		return lapWrapComponents(lapWrapConnected(sddmSolver));
+	}
 
-		auto t1 = high_resolution_clock::now();
+	/*
+	Create an adjacency matrix and a diagonal vector from an SDD M-matrix.
+	That is, from a Laplacian with added diagonal weights
+	*/
 
-		DynamicVector<Tv> x = sol(b);
-
-		if (verbose) {
-			auto t2 = high_resolution_clock::now();
-			auto msec = duration_cast<milliseconds>(t2 - t1).count();
-			std::cout << "Solver build time: " << msec << " ms.";
-		}
-
-		return x;
-	};
-}
-
-SolverB wrapInterface(const SolverA solver) {
-	return [=](const CompressedMatrix<Tv, blaze::columnMajor> &a, const float tol = 1e-6,
-		const double maxits = HUGE_VAL, const double maxtime = HUGE_VAL, const bool verbose = false,
-		vector<size_t>& pcgIts = vector<size_t>(), const ApproxCholParams params = ApproxCholParams())
+	pair<CompressedMatrix<Tv, blaze::columnMajor>, DynamicVector<Tv>> adj(const CompressedMatrix<Tv, blaze::columnMajor> &sddm) 
 	{
-		return wrapInterface(solver, a, 0, HUGE_VAL, HUGE_VAL, false, vector<size_t>(), ApproxCholParams());
-	};
-}*/
+		CompressedMatrix<Tv, blaze::columnMajor> a = Diagonal(diag(sddm)) - sddm;
+		DynamicVector<Tv> ones(sddm.rows(), 1);
+		DynamicVector<Tv> d = sddm * ones;
+
+		return pair<CompressedMatrix<Tv, blaze::columnMajor>, DynamicVector<Tv>>(a, d);
+	}
+	 
+	// Add a new vertex to a with weights to the other vertices corresponding to diagonal surplus weight.
+	
+	CompressedMatrix<Tv, blaze::columnMajor> extendMatrix(const CompressedMatrix<Tv, blaze::columnMajor> &a,
+		DynamicVector<Tv> d)
+	{
+		assert(a.rows() == d.size());
+
+		if (blaze::sum(blaze::abs(d)) == 0)
+			return a;
+
+		DynamicVector<Tv> dpos(d.size()+1, 0);
+
+		for (size_t i = 0; i < d.size(); i++)
+			dpos[i] = d[i] * (d[i] > 0);
+
+		size_t n = d.size();
+
+		CompressedMatrix<Tv, blaze::columnMajor> Res(a.rows() + 1, a.columns() + 1);
+
+		submatrix(Res, 0, 0, a.rows(), a.columns()) = a;
+		row(Res, a.rows()) = trans(dpos);
+		column(Res, a.columns()) = dpos;
+
+		return Res;
+	}
+
+	SolverB<Tv> sddmWrapLap(SolverA<Tv> lapSolver, const CompressedMatrix<Tv, blaze::columnMajor> &sddm, vector<size_t>& pcgIts,
+		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+		ApproxCholParams params = ApproxCholParams())
+	{
+		pair<CompressedMatrix<Tv, blaze::columnMajor>, DynamicVector<Tv>> Adj = adj();
+		CompressedMatrix<Tv, blaze::columnMajor> a = Adj.first;
+		DynamicVector<Tv> d = Adj.second;
+
+		CompressedMatrix<Tv, blaze::columnMajor>a1 = extendMatrix(a, d);
+
+		SubSolver<Tv> F = lapSolver(a1, pcgIts, tol, maxits, maxtime, verbose, params);
+
+		return [=, &pcgIts](const DynamicVector<Tv> &b) {
+			DynamicVector<Tv> sb(b.size() + 1);
+			subvector(sb, 0, b.size()) = b;
+			sb[b.size()] = -blaze::sum(b);
+
+			DynamicVector<Tv> xaug = F(sb, pcgIts, tol, maxits, maxtime, verbose, params);
+
+			xaug = xaug - DynamicVector<Tv>(xaug.size(), xaug[xaug.size() - 1]);
+
+			return subvector(xaug, 0, a.rows() - 1);
+
+		}
+	}
+};
+
+/*
+function sddmWrapLap(lapSolver, sddm::AbstractArray; tol::Real=1e-6, maxits=Inf, maxtime=Inf, verbose=false, pcgIts=Int[], params...)
+
+	# Make a new adj matrix, a1, with an extra entry at the end.
+	a, d = adj(sddm)
+	a1 = extendMatrix(a,d)
+	F = lapSolver(a1; tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgIts, params...)
+
+	f = function(b; tol=tol_, maxits=maxits_, maxtime=maxtime_, verbose=verbose_, pcgIts=pcgIts_)
+		xaug = F([b; -sum(b)], tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgIts)
+		xaug = xaug .- xaug[end]
+		return xaug[1:a.n]
+	end
+
+	return f
+
+end
+
+*/

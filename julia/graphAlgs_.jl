@@ -434,7 +434,7 @@ end
 
 
 """`prim(mat::SparseMatrixCSC; kind=:max)`
-Compute a maximum spanning tree of the matrix `mat`.  
+Compute a maximum spanning tree of the matrix `mat`.
 If `kind=:min`, computes a minimum spanning tree."""
 function prim(mat::SparseMatrixCSC; kind=:max)
 
@@ -445,7 +445,7 @@ function prim(mat::SparseMatrixCSC; kind=:max)
             mat.nzval[i] = -mat.nzval[i]
         end
     end
-    
+
   nVertices = mat.n
   nh = intHeap(nVertices)
 

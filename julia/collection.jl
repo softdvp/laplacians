@@ -63,9 +63,6 @@ sparse(ijv::IJV) = sparse(ijv.i, ijv.j, ijv.v, ijv.n, ijv.n)
 
 compress(ijv::IJV) = IJV(sparse(ijv))
 
-
-
-
 function components(mat::SparseMatrixCSC{Tv,Ti}) where {Tv,Ti}
     n = mat.n
 

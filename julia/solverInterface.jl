@@ -71,7 +71,7 @@ function wrapInterface(solver::Function)
 end
 
 function nullSolver(a;params...)
-    return 0.0
+    return [0.0]
 end
 
 """
@@ -176,7 +176,8 @@ function blockSolver(comps, solvers; tol::Real=1e-6, maxits=Inf, maxtime=Inf, ve
         for i in 1:length(comps)
             ind = comps[i]
             bi = b[ind]
-            x[ind] = (solvers[i])(bi;  tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgTmp)
+            x1=(solvers[i])(bi;  tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgTmp)
+            x[ind] = x1
             if length(pcgIts) > 0
                 pcgIts[1] = max(pcgIts[1],pcgTmp[1])
             end
