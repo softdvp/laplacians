@@ -15,7 +15,7 @@ void dump_ijv(int ijvn, IJV<int> &ijv) {
 	cout << "\ni=";
 	for (size_t k = 0; k < ijv.nnz; ++k)
 		cout << ijv.i[k] << " ";
-
+	 
 	cout << "\n" << "j=";
 	for (size_t k = 0; k < ijv.nnz; ++k)
 		cout << ijv.j[k] << " ";
@@ -33,7 +33,7 @@ const vector<vector<size_t>> vecToComps(vector<size_t> &compvec) {
 		vector<vector<size_t>> comps(nc);
 
 		vector<size_t> sizes(nc, 0);
-
+		   
 		for(size_t i:compvec) 
 			sizes[i-1]++;
 		

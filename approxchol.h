@@ -1,3 +1,5 @@
+//Structures for the approxChol solver
+
 #pragma once
 #include <iostream>
 #include <blaze/Math.h>
@@ -21,7 +23,7 @@ reverse is the index into lles of the other copy of this edge,
 since every edge is stored twice as we do not know the order of elimination in advance.
 */
 
-/*template<typename Tv>
+template<typename Tv>
 class LLp {
 public:
 	size_t row;
@@ -37,13 +39,14 @@ public:
 		reverse = this;
 	}
 
-	LLp(size_t Arow, size_t Aval, LLp* Anext, LLp* reverse):row(Arow), val(Aval), next(Anext), reverse(Areverse) {}
-	LLp(size_t Arow, size_t Aval) :row(Arow), val(Aval) {
+	LLp(size_t Arow, Tv Aval, LLp* Anext, LLp* Areverse):row(Arow), val(Aval), next(Anext), reverse(Areverse) {}
+
+	LLp(size_t Arow, Tv Aval) :row(Arow), val(Aval) {
 		next = this;
 		reverse = this;
 	}
 
-	LLp(size_t Arow, size_t Aval, LLp* Anext) :row(Arow), val(Aval), next(Anext) {
+	LLp(size_t Arow, Tv Aval, LLp* Anext) :row(Arow), val(Aval), next(Anext) {
 		reverse = this;
 	}
 };
@@ -59,15 +62,73 @@ We probably can get rid of degs - as it is only used to store initial degrees.
 
 */
 
-/*template <typename Tv>
+template <typename Tv>
 class LLmatp {
 public:
 	size_t n;
 	vector<size_t> degs;
-	vector<LLp<Tv>> cols;
-	vector<LLp<Tv>> lles;
-	LLmatp(CompressedMatrix<Tv, blaze::columnMajor> A);
+	vector<LLp<Tv>> *cols;
+	vector<LLp<Tv>> *llelems;
+
+	LLmatp(const CompressedMatrix<Tv, blaze::columnMajor> &A){
+		SparseMatrixCSC<Tv> a(A);
+		
+		n = A.rows();
+		size_t m = A.nonZeros();
+
+		degs.resize(n);
+		vector<size_t> flips = flipIndex(A);
+
+		cols.resize(n);
+		llelems.resize(m);
+
+		for (size_t i = 0; i < n; i++)
+		{
+			degs[i] = a.colptr[i + 1] - a.colptr[i];
+
+			size_t ind = a.colptr[i];
+			size_t j = a.rowval[ind];
+			Tv v = a.nzval[ind];
+			LLp<Tv> *llpend = new LLp<Tv>(j, v);
+			LLp<Tv> *next = llelems[ind] = llpend;
+			
+			for (size_t ind = a.colptr[i]; ind < a.colptr[i + 1]; ind++)
+			{
+				size_t j = a.rowval[ind];
+				Tv v = a.nzval[ind];
+				next = llelems[ind] = new LLp<Tv>(j, v, next);
+			}
+
+			cols[i] = next;
+		}
+
+		for (size_t i = 0; i < n; i++)
+			for (size_t ind = a.colptr[i]; ind < a.colptr[i + 1]; ind++)
+				llelems[ind]->reverse = llelems[flips[ind]];
+
+	}
 };
+
+/*
+
+	for ind in (a.colptr[i]+one(Tind)):(a.colptr[i+1]-one(Tind))
+			j = a.rowval[ind]
+			v = a.nzval[ind]
+			next = llelems[ind] = LLp{Tind,Tval}(j,v,next)
+		end
+		cols[i] = next
+	end
+
+	@inbounds for i in 1:n
+		for ind in a.colptr[i]:(a.colptr[i+1]-one(Tind))
+			llelems[ind].reverse = llelems[flips[ind]]
+		end
+	end
+
+	return LLmatp{Tind,Tval}(n, degs, cols, llelems)
+end
+
+*/
 
 //these are the types we use with a fixed ordering
 
@@ -80,6 +141,7 @@ public:
 
 	LLord(size_t Arow, size_t Anext, Tv Aval):row(Arow), next(Anext), val(Aval){}
 };
+
 
 template<typename Tv>
 class LLMatOrd {
@@ -96,20 +158,20 @@ public:
 	size_t ptr;
 	Tv val;
 
-	LLcol(size_t Arow, size_t Aptr, Tv val):row(Arow), ptr(Aptr), val(Aval){}
+	LLcol(size_t Arow, size_t Aptr, Tv Aval):row(Arow), ptr(Aptr), val(Aval){}
 };
 
 // LDLinv
 
-/*  
-  LDLinv contains the information needed to solve the Laplacian systems.
+  
+/*  LDLinv contains the information needed to solve the Laplacian systems.
   It does it by applying Linv, then Dinv, then Linv (transpose).
   But, it is specially constructed for this particular solver.
   It does not explicitly make the matrix triangular.
   Rather, col[i] is the name of the ith col to be eliminated
 */
 
-/*template<typename Tv>
+template<typename Tv>
 class LDLinv {
 public:
 	vector<size_t> col;
@@ -119,19 +181,18 @@ public:
 	vector<Tv> d;
 
 	LDLinv(CompressedMatrix<Tv, blaze::columnMajor> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0) {}
-	LDLinv(LLMatOrd<Tv> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0)){}
-	LDLinv(LLmatp<Tv> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0)){}
-
+	LDLinv(LLMatOrd<Tv> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0){}
+	LDLinv(LLmatp<Tv> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0){}
 };
 
 /*
 ApproxCholPQ
 
-the data strcture we use to keep track of degrees
+the data structure we use to keep track of degrees
 */
 
 
-/*class ApproxCholPQElem {
+class ApproxCholPQElem {
 public:
 	size_t prev;
 	size_t next;
@@ -149,7 +210,7 @@ public:
 */
 
 
-/*class ApproxCholPQ {
+class ApproxCholPQ {
 public:
 	vector<ApproxCholPQElem> elems; // indexed by node name
 	vector<size_t> lists;
@@ -184,41 +245,3 @@ public:
 	}
 };
 
-/*
-function LLmatp(a::SparseMatrixCSC{Tval,Tind}) where {Tind,Tval}
-	n = size(a,1)
-	m = nnz(a)
-
-	degs = zeros(Tind,n)
-
-	flips = flipIndex(a)
-
-	cols = Array{LLp{Tind,Tval}}(undef, n)
-	llelems = Array{LLp{Tind,Tval}}(undef, m)
-
-	@inbounds for i in 1:n
-		degs[i] = a.colptr[i+1] - a.colptr[i]
-
-		ind = a.colptr[i]
-		j = a.rowval[ind]
-		v = a.nzval[ind]
-		llpend = LLp{Tind,Tval}(j,v)
-		next = llelems[ind] = llpend
-		for ind in (a.colptr[i]+one(Tind)):(a.colptr[i+1]-one(Tind))
-			j = a.rowval[ind]
-			v = a.nzval[ind]
-			next = llelems[ind] = LLp{Tind,Tval}(j,v,next)
-		end
-		cols[i] = next
-	end
-
-	@inbounds for i in 1:n
-		for ind in a.colptr[i]:(a.colptr[i+1]-one(Tind))
-			llelems[ind].reverse = llelems[flips[ind]]
-		end
-	end
-
-	return LLmatp{Tind,Tval}(n, degs, cols, llelems)
-end
-
-*/

@@ -1,10 +1,10 @@
 
-using Laplacians
+#using Laplacians
 using SparseArrays
 using Statistics
 include("pcg_1.jl")
 include("collection.jl")
-include("solverInterface.jl")
+#include("solverInterface.jl")
 
 
 
@@ -207,6 +207,7 @@ a=[ -0.356543 -0.136045 -1.93844 1.18337 -0.207743;
      0.859572 -0.943768 0.375822 -1.57407 -0.858285;
      -0.0863611 -1.47299 1.02716 1.904 -0.42796]
 
+
 b=transpose([1.064160977905516 -0.3334067812850509  0.7919292830316926 0.01651278833545206 -0.6051230029995152])
 a = a * a'
 println("a * a' = \n")
@@ -232,7 +233,7 @@ println("\n\nnorm(ax-b)=", norm(ax_b))
 f = wrapInterface(X->cholesky(X,Val(true)))
 solvea = f(a, maxits=1000, maxtime = 1)
 println(norm(a*solvea(b, verbose=false, maxtime = 10)-b))
-"""
+
 GraphA10=
     [0. 0 0 0 0 0 0 0 1 0;
      0 0 0 0 0 0 0 0 0 0;
@@ -253,20 +254,21 @@ b10=[1., 2., 3., 4., 5., 6., 7., 8., 9., 10.]
 x10=sol(b10)
 #display(x10)
 # println(components(sparse(GrA)))
-
+"""
 GraphA=[ 0 0 0 1 1;
 		 0 0 1 0 0;
 		 0 1 0 1 1;
 		 1 0 1 0 0;
 		 1 0 1 0 0 ]
 
+"""
 lapGraphA=lap(sparse(GraphA))
 adjGraphA=adj(lapGraphA)
 
 display(Matrix(adjGraphA[1]))
 display(adjGraphA[2])
 
-ExtM=extendMatrix(lapGraphA, [10.0,20.,30.,40., 50.])
+ExtM=extendMatrix(lapGraphA, [10.0, 20., 30., 40., 50.])
 display(Matrix(ExtM))
 
 
@@ -276,3 +278,8 @@ display(Matrix(ExtM))
 #sol=lapWrapComponents(chol_sddm, sparse(GrA))
 #x10=sol(b10)
 #display(x10)
+"""
+
+aw=wtedEdgeVertexMat(sparse(GraphA))
+
+display(Matrix(aw))

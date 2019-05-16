@@ -282,6 +282,7 @@ function sddmWrapLap(lapSolver)
     end
     return f
 end
+
 function testZeroDiag(a)
     n = size(a,1)
     for i in 1:n
@@ -305,6 +306,7 @@ function flipIndex(a::SparseMatrixCSC{Tval,Tind}) where {Tval,Tind}
   function wtedEdgeVertexMat(mat::SparseMatrixCSC)
     (ai,aj,av) = findnz(triu(mat,1))
     m = length(ai)
+    
     n = size(mat)[1]
     v = av.^(1/2)
     return sparse(collect(1:m),ai,v,m,n) - sparse(collect(1:m),aj,v,m,n)

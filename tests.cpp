@@ -725,7 +725,7 @@ void CollectionFunctionTest() {
 	assert(abs(l2) < 2e-16);
 
 	/* 
-	Create 4th component graph of 10 vertices to test
+	Create four component graph of 10 vertices to test
 	0, 0, 0, 0, 0, 0, 0, 0, 1, 0
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	0, 0, 0, 0, 0, 0, 0, 0, 1, 0
@@ -774,9 +774,9 @@ void CollectionFunctionTest() {
 
 	// Test adj function
 
-	// 1th component graph
+	// One component graph
 
-	CompressedMatrix<double, blaze::columnMajor> Graph1th{ 
+	CompressedMatrix<double, blaze::columnMajor> Graph1comp{ 
 		{0, 0, 0, 1, 1}, 
 		{0, 0, 1, 0, 0},
 		{0, 1, 0, 1, 1},
@@ -784,22 +784,87 @@ void CollectionFunctionTest() {
 		{1, 0, 1, 0, 0}
 	};
 
-	CompressedMatrix<double, blaze::columnMajor>lapGraph = lapld.lap(Graph1th);
+	CompressedMatrix<double, blaze::columnMajor>lapGraph = lapld.lap(Graph1comp);
 
-	pair<CompressedMatrix<double, blaze::columnMajor>, DynamicVector<double>> Adj = lapld.adj(lapGraph);
+	CompressedMatrix<double, blaze::columnMajor> am;
+	DynamicVector<double> dd;
 
-	//cout << "\nadj=\n" << Adj.first << endl;
-	assert(abs(lapld.mean(Graph1th) - lapld.mean(Adj.first)) < 1e-6);
-	assert(abs(lapld.mean(Adj.second)) < 1e-6);
+	tie(am, dd) = lapld.adj(lapGraph);
+		
+	//cout << "\nadj=\n" << am << endl;
+
+	assert(abs(lapld.mean(Graph1comp) - lapld.mean(am)) < 1e-6);
+	assert(abs(lapld.mean(dd)) < 1e-6);
 
 	// Test extendMatrix function
 
 	DynamicVector<double> d{ 10, 20, -30, 40, 50 };
 	CompressedMatrix<double, blaze::columnMajor> ExtM = lapld.extendMatrix(lapGraph, d);
 
-	cout << ExtM << endl;
+	//cout << ExtM << endl;
 
 	assert(abs(round(ExtM(0, 0))) == 2 && abs(round(ExtM(2, 2))) == 3 && abs(round(ExtM(5, 0))) == 10 && abs(round(ExtM(2, 5))) == 0);
+
+	//Test sddmWrapLap
+
+	/*SolverA<double> lap_sddmv1 = lapld.sddmWrapLap(lapld.chol_sddm());
+
+	SolveA11 = lap_sddmv1(GraphA10);
+
+	x10 = SolveA11(b10);
+	cout << endl << "\nx= \n" << trans(x10) << endl;
+	
+	*/
+
+	//Test findnz function
+
+	vector<size_t> iv, jv;
+	DynamicVector<double> vv;
+
+	tie(iv, jv, vv) = findnz(Graph1comp);
+
+	/*cout << "iv= ";
+	for (size_t i = 0; i < iv.size(); i++)
+	{
+		cout << iv[i];
+	}
+	
+	cout << endl;
+
+	cout << "jv= ";
+	for (size_t i = 0; i < iv.size(); i++)
+	{
+		cout << jv[i];
+	}
+
+	cout << endl;
+	
+		
+	cout << "vv= " << vv << endl;
+	*/
+
+	assert(iv[0] == 3 && iv[2] == 2 && jv[0] == 0 && jv[2] == 1 && round(vv[0]==1) && round(vv[2])==1);
+
+	// Test triu function;
+	CompressedMatrix<double, blaze::columnMajor> TriUpper = lapld.triu(Graph1comp);
+
+	//cout << "Tri Upper= \n" << TriUpper;
+
+	assert(isUpper(TriUpper));
+
+	// Test wtedEdgeVertexMat function
+
+	CompressedMatrix<double, blaze::columnMajor>U;
+
+	U = lapld.wtedEdgeVertexMat(Graph1comp);
+
+	cout << "U=\n" << U << endl;
+
+	assert(round(U(0, 1)) == 1 && round(U(0, 2))== -1 && round(U(1, 3)) == -1);
+
+
+
+
 }
 
 	

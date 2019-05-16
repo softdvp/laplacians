@@ -25,81 +25,31 @@ using blaze::rowwise;
 using std::vector;
 using namespace std::chrono;
 
-// Julia sparse matrix class
-template <typename Tv>
-class SparseMatrixCSC{
-public:
-	size_t m;
-	size_t n;
-	vector<size_t> colptr;
-	vector<size_t> rowval;
-	DynamicVector<Tv> nzval;
+template<typename Tv>
+std::tuple<vector<size_t>, vector<size_t>, DynamicVector<Tv>> findnz(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
 
-	SparseMatrixCSC(size_t am, size_t an, vector<size_t> &acolptr, vector<size_t> arowval, DynamicVector<Tv> anzval):
-		m(am), n(an), colptr(acolptr), rowval(arowval), nzval(anzval){}
+	size_t nnz = mat.nonZeros();
 
-	SparseMatrixCSC() {}
-
-	//Convert from blaze::CompressedMatrix
-	SparseMatrixCSC(CompressedMatrix<Tv, blaze::columnMajor> &mat) {
-		m = mat.rows();
-		n = mat.columns();
-		
-		size_t nnz = mat.nonZeros();
-
-		colptr.resize(n + 1);
-		colptr[0] = 0;
-		colptr[n] = nnz;
-
-		rowval.resize(nnz);
-		nzval.resize(nnz);
-
-		size_t k = 0;
-
-		//Fill colptr, rowval and nzval
-
-		std::size_t totalnz = 0;
-
-		for (size_t l = 0UL; l < mat.rows(); ++l) {
-			std::size_t rownz = 0;
-
-			for (typename CompressedMatrix<Tv, blaze::columnMajor>::ConstIterator it = mat.cbegin(l); it != mat.cend(l); ++it) {
-
-				nzval[k] = it->value();
-				rowval[k] = it->index();
-				++k;
-				++rownz;
-			}
-			totalnz += rownz;
-			colptr[l + 1] = totalnz;
-		}
-	}
-
-	// Convert to blaze::CompressedMatrix
-	CompressedMatrix<Tv, blaze::columnMajor> toCompressedMatrix() {
-		CompressedMatrix<Tv, blaze::columnMajor>res(n, n);
-
-		size_t nnz = nzval.size();
-		res.reserve(nnz);
-
-		for (size_t i = 0; i != n; i++) {
-			size_t colbegin = colptr[i];
-			size_t colend = colptr[i + 1];
-
-			for (size_t row = colbegin; row != colend; row++) {
-				size_t rowv = rowval[row];
-				Tv v = nzval[row];
-				res.append(rowv, i, v);
-			}
-			res.finalize(i);
-		}
-		return res;
-	}
+	vector<size_t> i(nnz), j(nnz);
+	DynamicVector<Tv>v(nnz);
 	
-	const bool operator== (const SparseMatrixCSC<Tv> &b) const {
-		return 	m == b.m && n == b.n && colptr == b.colptr && rowval == b.rowval && nzval == b.nzval;
+	size_t k = 0;
+
+	//Fill i, row and v
+
+	for (size_t l = 0UL; l < mat.rows(); ++l) {
+		for (auto it = mat.cbegin(l); it != mat.cend(l); ++it) {
+
+			i[k] = it->index();
+			j[k] = l;
+			v[k] = it->value();
+
+			++k;
+		}
 	}
-};
+
+	return make_tuple(i, j, v);
+}
 
 template <typename Tv>
 class IJV {
@@ -150,14 +100,6 @@ public:
 		m.j = j;
 
 		m.v = v * x;
-
-		/*for (size_t i = 0; i < v.size(); ++i) {
-			m.v[i] = v[i] * x;
-		}*/
-				
-		/*for(auto& i:v)
-			m.v.push_back(i *x);
-		*/
 
 		return m;
 	}
@@ -1163,6 +1105,7 @@ public:
 		SubSolver<Tv> subSolver = solver(lasub, pcgIts, tol, maxits, maxtime, verbose, params);
 
 		return SolverB<Tv>([=, &pcgIts](const DynamicVector<Tv> &b) {
+
 			SubSolver<Tv> l_subSolver = subSolver;
 			DynamicVector<Tv> bs = index(b, leave) - DynamicVector<Tv>(leave.size(), mean(b));
 
@@ -1260,6 +1203,7 @@ public:
 	}
 
 	SolverA<Tv> lapWrapComponents(const SolverA<Tv> solver) {
+
 		return SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 			double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 			const ApproxCholParams params = ApproxCholParams())
@@ -1316,10 +1260,15 @@ public:
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
 	{
-		pair<CompressedMatrix<Tv, blaze::columnMajor>, DynamicVector<Tv>> Adj = adj();
+		/*pair<CompressedMatrix<Tv, blaze::columnMajor>, DynamicVector<Tv>> Adj = adj(sddm);
 		CompressedMatrix<Tv, blaze::columnMajor> a = Adj.first;
-		DynamicVector<Tv> d = Adj.second;
+		DynamicVector<Tv> d = Adj.second;*/
 
+		CompressedMatrix<Tv, blaze::columnMajor> a;
+		DynamicVector<Tv> d;
+
+		tie(a, d) = adj(sddm);
+		
 		CompressedMatrix<Tv, blaze::columnMajor>a1 = extendMatrix(a, d);
 
 		SubSolver<Tv> F = lapSolver(a1, pcgIts, tol, maxits, maxtime, verbose, params);
@@ -1329,32 +1278,68 @@ public:
 			subvector(sb, 0, b.size()) = b;
 			sb[b.size()] = -blaze::sum(b);
 
-			DynamicVector<Tv> xaug = F(sb, pcgIts, tol, maxits, maxtime, verbose, params);
+			SubSolver<Tv>l_F = F;
+
+			DynamicVector<Tv> xaug = l_F(sb, pcgIts, tol, maxits, maxtime, verbose, params);
 
 			xaug = xaug - DynamicVector<Tv>(xaug.size(), xaug[xaug.size() - 1]);
 
 			return subvector(xaug, 0, a.rows() - 1);
 
+		};
+	}
+
+	SolverA<Tv> sddmWrapLap(const SolverA<Tv> solver) {
+		
+		return SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+			double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+			const ApproxCholParams params = ApproxCholParams())
+		{
+			return sddmWrapLap(solver, a, pcgIts, tol, maxits, maxtime, verbose, params);
+		});
+	}
+
+	//Returns the upper triangle of M starting from the kth superdiagonal.
+	CompressedMatrix<Tv, blaze::columnMajor> triu(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t k=0){
+		
+		CompressedMatrix<Tv, blaze::columnMajor>Res(A.rows(), A.columns());
+
+		for (size_t i = k; i < A.rows(); ++i)
+			for (size_t j = i; j < A.columns(); j++)
+				Res(i, j) = A(i, j);
+
+		return Res;
+	}
+
+	CompressedMatrix<Tv, blaze::columnMajor> wtedEdgeVertexMat(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
+		vector<size_t> ai, aj;
+		DynamicVector<Tv> av;
+
+		tie(ai, aj, av) = findnz(triu(mat));
+
+		size_t m = ai.size();
+		size_t n = mat.rows();
+
+		DynamicVector<Tv> v = sqrt(av);
+
+		CompressedMatrix<Tv, blaze::columnMajor> Sparse1(m,n), Sparse2(m,n), Res;
+		
+		for (size_t i = 0; i < m; i++) {
+			Sparse1(i, ai[i]) = v[i];
+			Sparse2(i, aj[i]) = v[i];
 		}
+
+		Res = Sparse1 - Sparse2;
+
+		return Res;
 	}
 };
 
-/*
-function sddmWrapLap(lapSolver, sddm::AbstractArray; tol::Real=1e-6, maxits=Inf, maxtime=Inf, verbose=false, pcgIts=Int[], params...)
-
-	# Make a new adj matrix, a1, with an extra entry at the end.
-	a, d = adj(sddm)
-	a1 = extendMatrix(a,d)
-	F = lapSolver(a1; tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgIts, params...)
-
-	f = function(b; tol=tol_, maxits=maxits_, maxtime=maxtime_, verbose=verbose_, pcgIts=pcgIts_)
-		xaug = F([b; -sum(b)], tol=tol, maxits=maxits, maxtime=maxtime, verbose=verbose, pcgIts=pcgIts)
-		xaug = xaug .- xaug[end]
-		return xaug[1:a.n]
-	end
-
-	return f
-
+/*function wtedEdgeVertexMat(mat::SparseMatrixCSC)
+(ai, aj, av) = findnz(triu(mat, 1))
+m = length(ai)
+n = size(mat)[1]
+v = av. ^ (1 / 2)
+return sparse(collect(1:m), ai, v, m, n) - sparse(collect(1:m), aj, v, m, n)
 end
-
 */
