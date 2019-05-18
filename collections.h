@@ -1335,11 +1335,3 @@ public:
 	}
 };
 
-/*function wtedEdgeVertexMat(mat::SparseMatrixCSC)
-(ai, aj, av) = findnz(triu(mat, 1))
-m = length(ai)
-n = size(mat)[1]
-v = av. ^ (1 / 2)
-return sparse(collect(1:m), ai, v, m, n) - sparse(collect(1:m), aj, v, m, n)
-end
-*/

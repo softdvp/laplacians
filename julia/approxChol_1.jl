@@ -177,7 +177,7 @@ function LLmatp(a::SparseMatrixCSC{Tval,Tind}) where {Tind,Tval}
     degs = zeros(Tind,n)
 
     flips = flipIndex(a)
-
+    
     cols = Array{LLp{Tind,Tval}}(undef, n)
     llelems = Array{LLp{Tind,Tval}}(undef, m)
 

@@ -355,7 +355,7 @@ void CollectionTest() {
 	/*for (int i = 0; i < v.size(); i++) {
 		cout << v[i] << " ";
 	}*/
-	assert(v[0] == 3 && v[1] == 9 && v[3] == 4);
+	assert(v[0] == 2 && v[1] == 8 && v[3] == 3);
 	
 	//Out="flipIndex(C)=3, 9, 1, 4, 7, 10, 5, 11, 2, 6, 8, 12"
 
@@ -429,14 +429,15 @@ void CollectionTest() {
 
 	pair<int, size_t> mxpair = lapl.findmax(C);
 
-	cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
+	//cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
+
 	bool bl = mxpair == pair<int, size_t>(28, 3);
 	assert(bl);
 
 	DynamicVector<int> vmax{ 1, 2, 5, 4, 0 };
 	mxpair = lapl.findmax(vmax);
 
-	cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
+	//cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
 
 	bl = mxpair == pair<int, size_t>(5, 2);
 	assert(bl);
@@ -583,16 +584,16 @@ void CollectionFunctionTest() {
 
 	lapl.index(vout, idx, vin);
 
-	cout << "vout[idx]=vin\n" << vout << endl;
+	//cout << "vout[idx]=vin\n" << vout << endl;
 
 	assert(vout[1] == 3 && vout[2] == 5 && vout[6] == 9);
 
 	idx = { 1, 2 };
-	cout << vout << endl;
+	//cout << vout << endl;
 
 	vout = lapl.index(vin, idx);
 
-	cout << "vout=vin[idx]\n" << vout << endl;
+	//cout << "vout=vin[idx]\n" << vout << endl;
 
 	assert(vout[0] == 5 && vout[1] == 9);
 
@@ -858,13 +859,21 @@ void CollectionFunctionTest() {
 
 	U = lapld.wtedEdgeVertexMat(Graph1comp);
 
-	cout << "U=\n" << U << endl;
+	//cout << "U=\n" << U << endl;
 
 	assert(round(U(0, 1)) == 1 && round(U(0, 2))== -1 && round(U(1, 3)) == -1);
 
+	//Test LLmatp constructor
 
+	CompressedMatrix<double, blaze::columnMajor>LMat{ {1, 2, 3}, {4, 5, 6 }, {7, 8, 9} };
 
+	LLmatp<double> llmatp(LMat);
 
+	print_ll_col(llmatp, 0);
+
+	LLp<double>* ll = llmatp.cols[0];
+
+	assert(round(ll->val) == 7 && round(ll->next->val) == 4 && round(ll->next->next->val) == 1);
 }
 
 	

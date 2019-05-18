@@ -29,7 +29,7 @@ public:
 	SparseMatrixCSC() {}
 
 	//Convert from blaze::CompressedMatrix
-	SparseMatrixCSC(CompressedMatrix<Tv, blaze::columnMajor> &mat) {
+	SparseMatrixCSC(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
 		m = mat.rows();
 		n = mat.columns();
 
@@ -102,14 +102,12 @@ vector<size_t> flipIndex(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
 			++k;
 		}
 
-	CompressedMatrix<size_t, blaze::columnMajor> bakMat = ctrans(B);
-
 	vector<size_t> resv;
 	for (size_t i = 0; i < B.rows(); i++)
 		for (auto it = B.cbegin(i); it != B.cend(i); ++it) {
 			size_t v = it->value();
 
-			resv.push_back(v);
+			resv.push_back(v-1);
 		}
 
 	return resv;
