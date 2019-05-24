@@ -7,9 +7,6 @@ include("collection.jl")
 #include("solverInterface.jl")
 include("approxChol_1.jl")
 
-
-
-"""
 #bzbeta! test
 a=[ 1., 2., 3., 4.]
 b=[5., 4., 0., 1.]
@@ -23,7 +20,7 @@ b=[5, 4, 0, 1]
 axpy2!(4, a, b)
 println(b)
 
-
+"""
 m=[0 0 0 0; 5 8 0 0; 0 0 3 0; 0 6 0 0]
 
 sp_m=SparseMatrixCSC(m)
@@ -284,10 +281,11 @@ display(Matrix(ExtM))
 aw=wtedEdgeVertexMat(sparse(GraphA))
 
 display(Matrix(aw))
-"""
+
 
 Lmat=[1 2 3; 4 5 6; 7 8 9 ]
 
 llpm=LLmatp(sparse(Lmat))
 
 print_ll_col(llpm, 1)
+"""

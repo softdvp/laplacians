@@ -7,8 +7,7 @@
 
 int main()
 {
-	//bzbetatest();
-	//axpy2test();
+	pcg_tests();
 
 	//IJVtests();
 

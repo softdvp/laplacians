@@ -3,8 +3,9 @@
 #include <blaze/Math.h>
 #include <functional>
 #include <utility>
-#include "collections.h"
+#include "lapwrappers.h"
 #include "approxchol.h"
+#include "pcg_1.h"
 
 using blaze::DynamicVector;
 using blaze::CompressedMatrix;
@@ -12,27 +13,32 @@ using namespace std;
 
 #include "tests.h"
 
-/*void bzbetatest() {
-	DynamicVector<double>a{ 1, 2, 3, 4 };
-	DynamicVector<double>b{ 5, 4, 0, 1 };
+void pcg_tests() {
+	DynamicVector<double>pcg_a{ 1, 2, 3, 4 };
+	DynamicVector<double>pcg_b{ 5, 4, 0, 1 };
 	
 	double beta = 2.3;
-	bzbeta(beta, a, b);
+	bzbeta(beta, pcg_a, pcg_b);
 
-	cout << "Test of bzbeta function: "<< "\n" << a << "\n";
+//	cout << "Test of bzbeta function: "<< "\n" << pcg_a << "\n";
+
+	assert(round(pcg_a[0] * 10) == 73 && round(pcg_a[1] * 10) == 86);
+
 	//Out: (7.3, 8.6, 6.9, 10.2)
-}
 
-void axpy2test() {
-	DynamicVector<int>a{ 1, 2, 3, 4 };
-	DynamicVector<int>b{ 5, 4, 0, 1 };
+	DynamicVector<int>pcg_ai{ 1, 2, 3, 4 };
+	DynamicVector<int>pcg_bi{ 5, 4, 0, 1 };
 
 	int al = 4;
-	axpy2(al, a, b);
+	axpy2(al, pcg_ai, pcg_bi);
 
-	cout << "Test of axpy2 function: " << "\n" << b << "\n";
-	//Out: 3, 12, 12, 17
-}*/
+	//cout << "Test of axpy2 function: " << "\n" << pcg_bi << "\n";
+	assert(pcg_bi[0] == 9 && pcg_bi[3] == 17);
+
+	//Out: 9, 12, 12, 17
+
+}
+
 
 void IJVtests() {
 
@@ -129,9 +135,7 @@ void IJVtests() {
 	cout << "\nTest sparse function.\n\n";
 	SparseMatrixCSC<int> CSCMx1;
 
-	Laplacians<int> lapl;
-
-	CSCMx1 = lapl.sparseCSC(ijv0);
+	CSCMx1 = sparseCSC(ijv0);
 
 	cout << "\nCSC sparse matrix dump:\n";
 	cout << "CSCMx1.m=" << CSCMx1.m << endl;
@@ -216,8 +220,8 @@ void IJVtests() {
 
 	assert(newm == m);
 
-	size_t h1 = lapl.hashijv(ijv0);
-	size_t h2 = lapl.hashijv(ijv0, 5);
+	size_t h1 = hashijv(ijv0);
+	size_t h2 = hashijv(ijv0, 5);
 	cout << "\n\nTest hash(IJV) function:\n";
 	cout <<"hash(ijv): " << h1 << endl;
 	cout << "hash(ijv, 5): " << h2 << endl;
@@ -226,14 +230,14 @@ void IJVtests() {
 
 	cout << "\n\nTest compress(IJV) function:\n";
 
-	IJV<int>ijv3 = lapl.compress(ijv0);
+	IJV<int>ijv3 = compress(ijv0);
 
 	dump_ijv(3, ijv3);
 
 	assert(ijv0 == ijv3);
 
 	cout << endl << "\nTranspose ijv:\n ";
-	IJV<int> ijv4 = lapl.transpose(ijv0);
+	IJV<int> ijv4 = transpose(ijv0);
 
 	dump_ijv(4, ijv4);
 	assert(ijv4.i == ijv0.j && ijv4.j == ijv0.i && ijv4.v == ijv0.v);
@@ -262,10 +266,8 @@ void IJVtests() {
 void CollectionTest() {
 	CompressedMatrix<int, blaze::columnMajor> m, m1;
 
-	Laplacians<int> lapl;
-
 	//Test path_graph_ijv
-	IJV<int> ijv = lapl.path_graph_ijv(5);
+	IJV<int> ijv = path_graph_ijv<int>(5);
 
 	//dump_ijv(0, ijv);
 	m1 = ijv.toCompressedMatrix();
@@ -302,14 +304,14 @@ void CollectionTest() {
 	//cout << "\n\nCall function componets():\n";
 
 	SparseMatrixCSC<int> sprs(m10);
-	vector<size_t> comp = lapl.components(sprs);
+	vector<size_t> comp = components(sprs);
 	
 	/*for (int i = 0; i < comp.size(); i++)
 		cout << comp[i] << " ";*/
 
 	//cout << endl;
 
-	vector<size_t>comp1 = lapl.components(m10);
+	vector<size_t>comp1 = components(m10);
 
 	/*for (int i = 0; i < comp1.size(); i++)
 		cout << comp1[i] << " ";*/
@@ -332,7 +334,7 @@ void CollectionTest() {
 	A(0, 0) = 1; A(0, 1) = 2; A(1, 0) = 3; A(1, 1) = 4;
 	B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
 
-	C = lapl.kron(A, B);
+	C = kron(A, B);
 	//cout << "\nC = kron(A, B)=\n" << C;
 	assert(C(0, 0) == 0 && C(1, 1) == 7 && C(3, 3) == 28);
 
@@ -363,7 +365,7 @@ void CollectionTest() {
 
 	//cout << endl << endl << "diag(C)=\n";
 
-	DynamicVector<int> v1 = lapl.diag(C, 1);
+	DynamicVector<int> v1 = diag(C, 1);
 
 	/*for (int i = 0; i < v1.size(); i++) {
 		cout << v1[i] << " ";
@@ -376,7 +378,7 @@ void CollectionTest() {
 	
 	DynamicVector<int> dv=v1;
 	
-	CompressedMatrix<int, blaze::columnMajor>Dg = lapl.Diagonal(dv);
+	CompressedMatrix<int, blaze::columnMajor>Dg = Diagonal(dv);
 
 	//cout << endl << endl << "Diagonal(v)=\n" << Dg;
 	assert(Dg(0, 0) == 5 && Dg(1, 1) == 12 & Dg(2, 2) == 20);
@@ -398,20 +400,20 @@ void CollectionTest() {
 		*/
 
 	// rowwise sum
-	DynamicVector<int> vec1 = lapl.sum(C);
+	DynamicVector<int> vec1 = sum(C);
 
 	//cout << "\nsum(C) = \n" << vec1;
 	//Out: (15, 39, 35, 91)
 	assert(vec1[0] == 15 && vec1[1] == 39 && vec1[2] == 35 && vec1[3] == 91);
 
 	//columnwise sum
-	vec1 = lapl.sum(C, 2);
+	vec1 = sum(C, 2);
 	//cout << "\nsum(C) = \n" << vec1;
 	//Out: (24, 48, 36, 72)
 	assert(vec1[0] == 24 && vec1[1] == 48 && vec1[2] == 36 && vec1[3] == 72);
 
 	//Test diagmat()
-	CompressedMatrix<int, blaze::columnMajor> DiagMx = lapl.diagmat(C);
+	CompressedMatrix<int, blaze::columnMajor> DiagMx = diagmat(C);
 	//cout << "\ndiagmat(C) = \n" << DiagMx;
 
 	assert(DiagMx(0, 0) == 15 && DiagMx(1, 1) == 39 && DiagMx(2, 2) == 35 && DiagMx(3, 3) == 91);
@@ -427,7 +429,7 @@ void CollectionTest() {
 
 	//Test findmax function
 
-	pair<int, size_t> mxpair = lapl.findmax(C);
+	pair<int, size_t> mxpair = findmax(C);
 
 	//cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
 
@@ -435,7 +437,7 @@ void CollectionTest() {
 	assert(bl);
 
 	DynamicVector<int> vmax{ 1, 2, 5, 4, 0 };
-	mxpair = lapl.findmax(vmax);
+	mxpair = findmax(vmax);
 
 	//cout << "findmax=" << "(" << mxpair.first << ", " << mxpair.second << ")" << endl;
 
@@ -444,7 +446,7 @@ void CollectionTest() {
 
 	//Test pow()
 	CompressedMatrix<int, blaze::columnMajor> mx1{ {1,2}, {3,4} };
-	CompressedMatrix<int, blaze::columnMajor>powmx = lapl.pow(mx1, 2);
+	CompressedMatrix<int, blaze::columnMajor>powmx = pow(mx1, 2);
 
 	//cout << "\npow(M) = \n" << powmx;
 
@@ -457,7 +459,7 @@ void CollectionTest() {
 	assert(powmx(0, 0) == 7 && powmx(0, 1) == 10 && powmx(1, 0) == 15 && powmx(1, 1) == 22);
 
 	//Test power():
-	CompressedMatrix<int, blaze::columnMajor>powmx1 = lapl.power(C, 2);
+	CompressedMatrix<int, blaze::columnMajor>powmx1 = power(C, 2);
 
 	//cout << "\npower(C, 2) = \n" << powmx1;
 
@@ -475,7 +477,7 @@ void CollectionTest() {
 
 	DynamicVector<int>Av{ 1,2,3 }, Bv{ 4, 5, 6 }, Cv;
 
-	Cv = lapl.kron(Av, Bv);
+	Cv = kron(Av, Bv);
 	//cout << "\nCv = kron(Av, Bv)=\n" << Cv;
 
 	//Out = (4, 5, 6, 8, 10, 12, 12, 15, 18)
@@ -500,8 +502,6 @@ void CollectionTest() {
 
 void CollectionFunctionTest() {
 
-	Laplacians<int> lapl;
-
 	//Test product_graph() function
 
 	CompressedMatrix<int, blaze::columnMajor>
@@ -520,7 +520,7 @@ void CollectionFunctionTest() {
 
 	IJV<int>IJVA(GrA), IJVB(GrB);
 
-	IJV<int> ijv0 = lapl.product_graph(IJVA, IJVB);
+	IJV<int> ijv0 = product_graph(IJVA, IJVB);
 	/*cout << "\n\nproduct_graph(B, A)=\n";
 	dump_ijv(0, ijv0);*/
 	assert(ijv0.i[2] == 22 && ijv0.i[ijv0.i.size() - 3] == 35 && ijv0.j[2] == 18 && ijv0.j[ijv0.j.size() - 3] == 71);
@@ -528,20 +528,20 @@ void CollectionFunctionTest() {
 	CompressedMatrix<int, blaze::columnMajor>GridMx;
 
 	//Test grid2()
-	GridMx = lapl.grid2(5);
+	GridMx = grid2<int>(5);
 
 	//cout << GridMx;
 
 	assert(GridMx(0, 1) == 1 && GridMx(0, 5) == 1 && GridMx(1, 0) == 1);
 
 	//Test lap function
-	CompressedMatrix<int, blaze::columnMajor> LapMx = lapl.lap(GrA);
+	CompressedMatrix<int, blaze::columnMajor> LapMx = lap(GrA);
 	//cout << LapMx << endl;
 
 	assert(LapMx(0, 0) == 2 && LapMx(1, 1) == 3 && LapMx(3, 0) == -1 && LapMx(0, 1) == -1);
 
 	//Test forceLap function
-	CompressedMatrix<int, blaze::columnMajor>forceLapMx = lapl.forceLap(GrA);
+	CompressedMatrix<int, blaze::columnMajor>forceLapMx = forceLap(GrA);
 	//cout << forceLapMx << endl;
 	assert(forceLapMx(0, 0) == 2 && forceLapMx(1, 1) == 3 && forceLapMx(3, 0) == -1 && forceLapMx(0, 1) == -1);
 
@@ -559,7 +559,7 @@ void CollectionFunctionTest() {
 
 	vector<size_t> Idx1{ 0, 1 }, Idx2{ 1, 2 };
 
-	CompressedMatrix<int, blaze::columnMajor> Midx = lapl.index(Ma, Idx1, Idx2);
+	CompressedMatrix<int, blaze::columnMajor> Midx = index<int>(Ma, Idx1, Idx2);
 
 	//cout << Midx << endl;
 
@@ -567,13 +567,13 @@ void CollectionFunctionTest() {
 
 	vector<size_t> Idx0{ 0 };
 
-	Midx = lapl.index(Ma, Idx1, Idx0);
+	Midx = index<int>(Ma, Idx1, Idx0);
 
 	//cout << Midx << endl;
 
 	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);
 
-	Midx = lapl.index(Ma, Idx1);
+	Midx = index<int>(Ma, Idx1);
 	//cout << Midx << endl;
 
 	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);
@@ -582,7 +582,7 @@ void CollectionFunctionTest() {
 
 	vector<size_t> idx{ 1, 2, 6 };
 
-	lapl.index(vout, idx, vin);
+	index(vout, idx, vin);
 
 	//cout << "vout[idx]=vin\n" << vout << endl;
 
@@ -591,7 +591,7 @@ void CollectionFunctionTest() {
 	idx = { 1, 2 };
 	//cout << vout << endl;
 
-	vout = lapl.index(vin, idx);
+	vout = index(vin, idx);
 
 	//cout << "vout=vin[idx]\n" << vout << endl;
 
@@ -605,7 +605,6 @@ void CollectionFunctionTest() {
 	CompressedMatrix<double, blaze::columnMajor> ChA{ {4.0, 12.0, -16.0}, {12.0, 37.0,	 -43.0}, {-16.0, -43.0, 98.0 } };
 	CompressedMatrix<double, blaze::columnMajor> L;
 
-	Laplacians<double> lapld;
 	Factorization<double> f;
 
 	try {
@@ -662,7 +661,7 @@ void CollectionFunctionTest() {
 	a = a * blaze::trans(a);
 
 	vector<size_t> pcgits;
-	SolverBMat<double>SolveA = lapld.wrapInterfaceMat(cholesky<double>, a, pcgits);
+	SolverBMat<double>SolveA = wrapInterfaceMat<double>(cholesky<double>, a, pcgits);
 
 	DynamicVector<double> b1(b.rows());
 
@@ -678,7 +677,7 @@ void CollectionFunctionTest() {
 	assert(abs(l2) < 2e-16);
 
 	//Test chol_sddm 
-	SolverAMat<double> ch_sddm = lapld.chol_sddm_mat();
+	SolverAMat<double> ch_sddm = chol_sddm_mat<double>();
 	SubSolverMat<double> SolveA1 = ch_sddm(a);
 
 	l2 = norm(a*SolveA1(b) - b1);
@@ -695,7 +694,7 @@ void CollectionFunctionTest() {
 	m10(8, 5) = 1;	m10(4, 7) = 1;	m10(8, 7) = 1;	m10(1, 8) = 1;	m10(5, 8) = 1;
 	m10(7, 8) = 1;
 
-	assert(!lapl.isConnected(m10));
+	assert(!isConnected(m10));
 
 	CompressedMatrix<int, blaze::columnMajor>
 		MeanA{ {0, 1, 0, 1, 0, 0, 0, 0, 0}, {1, 0, 1, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 0, 0, 0},
@@ -704,7 +703,7 @@ void CollectionFunctionTest() {
 
 	//cout << "mean = " << lapld.mean(MeanA) << endl;
 
-	SolverB<double>SolveAv = lapld.wrapInterface(cholesky<double>, a, pcgits);
+	SolverB<double>SolveAv = wrapInterface<double>(cholesky<double>, a, pcgits);
 
 	b1 = { 1.064160977905516, -0.3334067812850509, 0.7919292830316926, 0.01651278833545206, -0.6051230029995152 };
 
@@ -716,7 +715,7 @@ void CollectionFunctionTest() {
 
 	//Test chol_sddm for vector
 
-	SolverA<double> ch_sddmv = lapld.chol_sddm();
+	SolverA<double> ch_sddmv = chol_sddm<double>();
 	SubSolver<double> SolveA1v = ch_sddmv(a);
 
 	l2 = norm(a*SolveA1v(b1) - b1);
@@ -756,7 +755,7 @@ void CollectionFunctionTest() {
 
 	//Test lapWrapComponents
 
-	SolverB<double> Solver10 = lapld.lapWrapComponents(ch_sddmv, GraphA10, pcgits);
+	SolverB<double> Solver10 = lapWrapComponents(ch_sddmv, GraphA10, pcgits);
 
 	DynamicVector<double> x10 = Solver10(b10);
 
@@ -765,7 +764,7 @@ void CollectionFunctionTest() {
 
 	//Test lapWrapSDDM
 	
-	SolverA<double> lap_sddmv = lapld.lapWrapSDDM(lapld.chol_sddm());
+	SolverA<double> lap_sddmv = lapWrapSDDM(chol_sddm<double>());
 	
 	SubSolver<double> SolveA11 = lap_sddmv(GraphA10);
 
@@ -785,22 +784,22 @@ void CollectionFunctionTest() {
 		{1, 0, 1, 0, 0}
 	};
 
-	CompressedMatrix<double, blaze::columnMajor>lapGraph = lapld.lap(Graph1comp);
+	CompressedMatrix<double, blaze::columnMajor>lapGraph = lap(Graph1comp);
 
 	CompressedMatrix<double, blaze::columnMajor> am;
 	DynamicVector<double> dd;
 
-	tie(am, dd) = lapld.adj(lapGraph);
+	tie(am, dd) = adj(lapGraph);
 		
 	//cout << "\nadj=\n" << am << endl;
 
-	assert(abs(lapld.mean(Graph1comp) - lapld.mean(am)) < 1e-6);
-	assert(abs(lapld.mean(dd)) < 1e-6);
+	assert(abs(mean(Graph1comp) - mean(am)) < 1e-6);
+	assert(abs(mean(dd)) < 1e-6);
 
 	// Test extendMatrix function
 
 	DynamicVector<double> d{ 10, 20, -30, 40, 50 };
-	CompressedMatrix<double, blaze::columnMajor> ExtM = lapld.extendMatrix(lapGraph, d);
+	CompressedMatrix<double, blaze::columnMajor> ExtM = extendMatrix(lapGraph, d);
 
 	//cout << ExtM << endl;
 
@@ -826,18 +825,14 @@ void CollectionFunctionTest() {
 
 	/*cout << "iv= ";
 	for (size_t i = 0; i < iv.size(); i++)
-	{
 		cout << iv[i];
-	}
-	
+		
 	cout << endl;
 
 	cout << "jv= ";
 	for (size_t i = 0; i < iv.size(); i++)
-	{
 		cout << jv[i];
-	}
-
+	
 	cout << endl;
 	
 		
@@ -847,7 +842,7 @@ void CollectionFunctionTest() {
 	assert(iv[0] == 3 && iv[2] == 2 && jv[0] == 0 && jv[2] == 1 && round(vv[0]==1) && round(vv[2])==1);
 
 	// Test triu function;
-	CompressedMatrix<double, blaze::columnMajor> TriUpper = lapld.triu(Graph1comp);
+	CompressedMatrix<double, blaze::columnMajor> TriUpper = triu(Graph1comp);
 
 	//cout << "Tri Upper= \n" << TriUpper;
 
@@ -857,7 +852,7 @@ void CollectionFunctionTest() {
 
 	CompressedMatrix<double, blaze::columnMajor>U;
 
-	U = lapld.wtedEdgeVertexMat(Graph1comp);
+	U = wtedEdgeVertexMat(Graph1comp);
 
 	//cout << "U=\n" << U << endl;
 

@@ -1,7 +1,6 @@
 #pragma once
 
-void bzbetatest();
-void axpy2test();
+void pcg_tests();
 void IJVtests();
 void CollectionTest();
 void CollectionFunctionTest();

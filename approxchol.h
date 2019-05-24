@@ -8,6 +8,7 @@
 #include <blaze/math/Subvector.h>
 #include <vector>
 #include <random>
+#include <chrono>
 #include "graphalgs.h"
 
 using namespace std;
@@ -272,6 +273,197 @@ public:
 	}
 };
 
+//  Solvers for A*x=B where B is a matrix
+
+template <typename Tv>
+class Factorization {
+public:
+	CompressedMatrix<Tv, blaze::columnMajor> Lower;
+};
+
+template <typename Tv>
+using FactorSolver = function<Factorization<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&)>;
+
+
+//Result of wrappers
+//Function: pass B matrix, returns x vector
+
+template <typename Tv>
+using SolverBMat = function<DynamicVector<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&)>;
+
+//Result of SolverA functor
+//Convert SolverA to a function with 1 paramater B - SolverB
+template <typename Tv>
+using SubSolverFuncMat = function <DynamicVector<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
+	double, bool, ApproxCholParams)>;
+
+template <typename Tv>
+class SubSolverMat {
+	SubSolverFuncMat<Tv> Solver;
+public:
+	SubSolverMat(SubSolverFuncMat<Tv> Asolver) : Solver(Asolver) {};
+
+	SubSolverMat(SolverBMat<Tv> solver) {
+
+		Solver = [=](const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts,
+			float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+			ApproxCholParams params = ApproxCholParams()) {
+
+			return solver(b);
+		};
+	}
+
+	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts,
+		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+		ApproxCholParams params = ApproxCholParams()) {
+
+		return Solver(b, pcgIts, tol, maxits, maxtime, verbose, params);
+	}
+
+	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b) {
+		vector<size_t> pcgIts;
+
+		return Solver(b, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+	}
+};
+
+// Function: pass A matrix, return SubSolver
+template <typename Tv>
+using SolverAFuncMat = std::function<SubSolverMat<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
+	double, bool, ApproxCholParams)>;
+
+template <typename Tv>
+class SolverAMat {
+	SolverAFuncMat<Tv> Solver;
+public:
+	SolverAMat(SolverAFuncMat<Tv> solver) : Solver(solver) {}
+
+	SubSolverMat<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
+		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+		ApproxCholParams params = ApproxCholParams()) {
+
+		return Solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
+	}
+
+	SubSolverMat<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a) {
+		vector<size_t> pcgIts;
+		return Solver(a, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+	}
+};
+
+//  Solvers for A*x=b where b is a vector 
+
+//Result of wrappers
+//Function: pass B matrix, returns x vector
+
+template <typename Tv>
+using SolverB = function<DynamicVector<Tv>(const DynamicVector<Tv>&)>;
+
+//Result of SolverA functor
+//Convert SolverA to a function with 1 paramater B - SolverB
+
+template <typename Tv>
+using SubSolverFunc = std::function <DynamicVector<Tv>(const DynamicVector<Tv>&, vector<size_t>&, float, double,
+	double, bool, ApproxCholParams)>;
+
+template <typename Tv>
+class SubSolver {
+	SubSolverFunc<Tv> Solver;
+public:
+	SubSolver() {}
+
+	SubSolver(SubSolverFunc<Tv> Asolver) : Solver(Asolver) {};
+
+	SubSolver(SolverB<Tv> solver) {
+
+		Solver = [=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts,
+			float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+			ApproxCholParams params = ApproxCholParams()) {
+
+			return solver(b);
+		};
+	}
+
+	/*SubSolver &operator=(const SubSolver &s) {
+		Solver = s.Solver;
+
+		return *this;
+	}*/
+
+	DynamicVector<Tv>operator()(const DynamicVector<Tv> &b, vector<size_t>& pcgIts,
+		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+		ApproxCholParams params = ApproxCholParams()) {
+		return Solver(b, pcgIts, tol, maxits, maxtime, verbose, params);
+	}
+
+	DynamicVector<Tv>operator()(const DynamicVector<Tv> &b) {
+		vector<size_t> pcgIts;
+		return Solver(b, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+	}
+};
+
+// Function: pass A matrix, return SubSolver
+template <typename Tv>
+using SolverAFunc = std::function<SubSolver<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
+	double, bool, ApproxCholParams)>;
+
+template <typename Tv>
+class SolverA {
+	SolverAFunc<Tv> Solver;
+public:
+	SolverA(SolverAFunc<Tv> solver) : Solver(solver) {}
+
+	SubSolver<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
+		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
+		ApproxCholParams params = ApproxCholParams()) {
+
+		return Solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
+	}
+
+	SubSolver<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a) {
+		vector<size_t> pcgIts;
+		return Solver(a, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+	}
+};
+
+//Cholesky-based Substitution
+
+template <typename Tv>
+DynamicVector<Tv> chol_subst(const CompressedMatrix<Tv, blaze::columnMajor> &Lower, const CompressedMatrix<Tv, blaze::columnMajor> &B) {
+	DynamicVector<Tv> res(B.rows());
+	DynamicMatrix<Tv, blaze::columnMajor> B1 = B, L = Lower;
+
+	potrs(L, B1, 'L');
+
+	res = column(B1, 0);
+
+	return res;
+}
+
+template <typename Tv>
+DynamicVector<Tv> chol_subst(const CompressedMatrix<Tv, blaze::columnMajor> &Lower, const DynamicVector<Tv> &b) {
+
+	DynamicMatrix<Tv, blaze::columnMajor> L = Lower;
+	DynamicVector<Tv> b1 = b;
+
+	potrs(L, b1, 'L');
+
+	return b1;
+}
+
+// Function: pass A matrix, return A matrix factorization
+
+template <typename Tv>
+Factorization<Tv> cholesky(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
+	DynamicMatrix<Tv, blaze::columnMajor> A1(A), L;
+	Factorization<Tv> F;
+
+	blaze::llh(A1, L);
+
+	F.Lower = L;
+
+	return F;
+}
 
 //The approximate factorization
 
@@ -458,7 +650,7 @@ LDLinv<Tv> approxChol(LLmatp<Tv> a) {
 
 		LLp<Tv>* ll = colspace[len];
 		Tv w = vals[len] * colScale;
-		size_t j = ll.row;
+		size_t j = ll->row;
 		LLp<Tv>* revj = ll->reverse;
 
 		if (it < n - 1)
@@ -547,5 +739,129 @@ DynamicVector<Tv> LDLsolver(const LDLinv<Tv> &ldli, const DynamicVector<Tv> &b) 
 	y -= mu;
 	
 	return y;
+}
+
+/*template<typename Tv>
+SolverB<Tv> approxchol_lapGreedy(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+	double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
+	const ApproxCholParams params = ApproxCholParams())
+{
+	auto t1 = high_resolution_clock::now();
+
+	CompressedMatrix<Tv, blaze::columnMajor> la=l;
+
+	return [=, &pcgIts](DynamicVector<Tv> b) {
+		//pcg()
+	}
+}
+*/
+
+/*
+
+  t1 = time()
+
+  la = lap(a) # a hit !?
+
+  llmat = LLmatp(a)
+  ldli = approxChol(llmat)
+  F(b) = LDLsolver(ldli, b)
+
+  f(b;tol=tol_,maxits=maxits_, maxtime=maxtime_, verbose=verbose_, pcgIts=pcgIts_) = pcg(la, b .- mean(b), F, tol=tol, maxits=maxits, maxtime=maxtime, pcgIts=pcgIts, verbose=verbose, stag_test = params.stag_test)
+
+end
+
+*/
+
+/* ApproxCholPQ
+It only implements pop, increment key, and decrement key.
+All nodes with degrees 1 through n appear in their own doubly - linked lists.
+Nodes of higher degrees are bundled together.
+*/
+
+inline void ApproxCholPQ::move(size_t i, size_t newkey, size_t oldlist, size_t newlist) {
+
+	size_t prev = elems[i].prev;
+	size_t next = elems[i].next;
+
+	// remove i from its old list
+
+	if (next != SIZE_MAX)
+	{
+		ApproxCholPQElem newpqel(prev, elems[next].next, elems[next].key);
+		elems[next] = newpqel;
+	}
+
+	if (prev != SIZE_MAX) {
+		ApproxCholPQElem newpqel(elems[prev].prev, next, elems[prev].key);
+		elems[prev] = newpqel;
+	}
+	else
+		lists[oldlist] = next;
+
+	// insert i into its new list
+	size_t head = lists[newlist];
+
+	if (head != SIZE_MAX) {
+		ApproxCholPQElem newpqel(i, elems[head].next, elems[head].key);
+		elems[head] = newpqel;
+	}
+
+	lists[newlist] = i;
+	elems[i] = ApproxCholPQElem(SIZE_MAX, head, newkey);
+}
+
+//Increment the key of element i
+//This could crash if i exceeds the maxkey
+
+inline void ApproxCholPQ::inc(size_t i) {
+
+	size_t oldlist = keyMap(elems[i].key, n);
+	size_t newlist = keyMap(elems[i].key + 1, n);
+
+	if (newlist != oldlist)
+		move(i, elems[i].key + 1, oldlist, newlist);
+	else
+		elems[i] = ApproxCholPQElem(elems[i].prev, elems[i].next, elems[i].key + 1);
+
+}
+
+inline size_t ApproxCholPQ::pop() {
+	assert(nitems != 0);
+
+	while (lists[minlist] == SIZE_MAX)
+		minlist++;
+
+	size_t i = lists[minlist];
+	size_t next = elems[i].next;
+
+	lists[minlist] = next;
+
+	if (next != SIZE_MAX)
+		elems[next] = ApproxCholPQElem(SIZE_MAX, elems[next].next, elems[next].key);
+
+	nitems--;
+
+	return i;
+}
+
+// Decrement the key of element i
+// This could crash if i exceeds the maxkey
+
+inline void ApproxCholPQ::dec(size_t i) {
+
+	size_t oldlist = keyMap(elems[i].key, n);
+	size_t newlist = keyMap(elems[i].key - 1, n);
+
+	if (newlist != oldlist) {
+		move(i, elems[i].key - 1, oldlist, newlist);
+
+		if (newlist < minlist)
+			minlist = newlist;
+	}
+	else
+	{
+		ApproxCholPQElem newpqel(elems[i].prev, elems[i].next, elems[i].key - 1);
+		elems[i] = newpqel;
+	}
 }
 
