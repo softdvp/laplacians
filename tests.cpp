@@ -355,12 +355,12 @@ void CollectionTest() {
 
 	vector<size_t> v = flipIndex(C);
 
-	/*for (int i = 0; i < v.size(); i++) {
-		cout << v[i] << " ";
-	}*/
+	/*for (int i = 0; i < v.size(); i++) 
+		cout << v[i] << " ";*/
+	
 	assert(v[0] == 2 && v[1] == 8 && v[3] == 3);
 	
-	//Out="flipIndex(C)=3, 9, 1, 4, 7, 10, 5, 11, 2, 6, 8, 12"
+	//Out="flipIndex(C)=2, 8, 0, 3, 6, 9, 4, 10, 1, 5, 7, 11"
 
 	//Test function diag()
 
@@ -569,7 +569,7 @@ void CollectionFunctionTest() {
 	vector<size_t> Idx0{ 0 };
 
 	Midx = index<int>(Ma, Idx1, Idx0);
-
+	  
 	//cout << Midx << endl;
 
 	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);

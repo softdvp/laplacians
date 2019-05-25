@@ -37,6 +37,7 @@ namespace laplacians {
 
 	template<typename Tv>
 	vector<size_t> flipIndex(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
+
 		CompressedMatrix<size_t, blaze::columnMajor>B(A.rows(), A.columns());
 
 		size_t k = 1;
@@ -58,6 +59,11 @@ namespace laplacians {
 
 		return resv;
 	}
+
+	/*template<typename Tv>
+	vector<size_t> flipIndex(const SparseMatrixCSC<Tv>& A) {
+
+	}*/
 
 	template <typename Tv>
 	DynamicVector<Tv> diag(const CompressedMatrix<Tv, blaze::columnMajor> &A, size_t diag_n = 0) {
@@ -494,10 +500,15 @@ namespace laplacians {
 	
 	template<typename Tv>
 	CompressedMatrix<Tv, blaze::columnMajor> wtedEdgeVertexMat(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
+		/* C++11
 		vector<size_t> ai, aj;
 		DynamicVector<Tv> av;
 
 		tie(ai, aj, av) = findnz(triu(mat));
+		*/
+
+		// C++17 
+		auto [ai, aj, av] = findnz(triu(mat));
 
 		size_t m = ai.size();
 		size_t n = mat.rows();

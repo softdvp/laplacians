@@ -116,6 +116,43 @@ namespace laplacians {
 					llelems[ind]->reverse = llelems[flips[ind]];
 
 		}
+
+		/*LLmatp(const SparseMatrixCSC<Tv>& a) {
+			
+			n = a.n;
+			size_t m = a.nnz;
+
+			degs.resize(n);
+			vector<size_t> flips = flipIndex(a);
+
+			cols.resize(n);
+			llelems.resize(m);
+
+			for (size_t i = 0; i < n; i++)
+			{
+				degs[i] = a.colptr[i + 1] - a.colptr[i];
+
+				size_t ind = a.colptr[i];
+				size_t j = a.rowval[ind];
+				Tv v = a.nzval[ind];
+				LLp<Tv>* llpend = new LLp<Tv>(j, v);
+				LLp<Tv>* next = llelems[ind] = llpend;
+
+				for (size_t ind = a.colptr[i] + 1; ind < a.colptr[i + 1]; ind++)
+				{
+					size_t j = a.rowval[ind];
+					Tv v = a.nzval[ind];
+					next = llelems[ind] = new LLp<Tv>(j, v, next);
+				}
+
+				cols[i] = next;
+			}
+
+			for (size_t i = 0; i < n; i++)
+				for (size_t ind = a.colptr[i] + 1; ind < a.colptr[i + 1]; ind++)
+					llelems[ind]->reverse = llelems[flips[ind]];
+
+		}*/
 	};
 
 	//Print a column in an LLmatp matrix.
