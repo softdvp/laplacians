@@ -90,6 +90,7 @@ namespace laplacians {
 
 				if (pcgIts.size())
 					pcgIts[0] = pcgIts[0] > pcgTmp[0] ? pcgIts[0] : pcgTmp[0];
+					
 			}
 
 			return x;

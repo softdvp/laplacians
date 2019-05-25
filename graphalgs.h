@@ -500,15 +500,15 @@ namespace laplacians {
 	
 	template<typename Tv>
 	CompressedMatrix<Tv, blaze::columnMajor> wtedEdgeVertexMat(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
-		/* C++11
+		// C++11
 		vector<size_t> ai, aj;
 		DynamicVector<Tv> av;
 
 		tie(ai, aj, av) = findnz(triu(mat));
-		*/
+		
 
 		// C++17 
-		auto [ai, aj, av] = findnz(triu(mat));
+//		auto [ai, aj, av] = findnz(triu(mat));
 
 		size_t m = ai.size();
 		size_t n = mat.rows();

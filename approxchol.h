@@ -153,6 +153,7 @@ namespace laplacians {
 					llelems[ind]->reverse = llelems[flips[ind]];
 
 		}*/
+
 	};
 
 	//Print a column in an LLmatp matrix.
