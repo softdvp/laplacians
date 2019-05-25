@@ -6,11 +6,12 @@
 #include <blaze/math/Subvector.h>
 #include <vector>
 #include <functional>
+#include <random>
 #include "sparsecsc.h"
 #include "ijvstruct.h"
 
 using namespace std;
-using namespace laplacians;
+
 using blaze::CompressedMatrix;
 using blaze::DynamicMatrix;
 using blaze::DynamicVector;
@@ -18,6 +19,21 @@ using blaze::columnwise;
 using blaze::rowwise;
 
 namespace laplacians {
+
+	template<typename Tv>
+	class Random {
+	private:
+		random_device rd;
+		mt19937 gen;
+
+	public:
+
+		Tv rand0_1() {
+			return generate_canonical<Tv, 8*sizeof(Tv)>(gen);
+		}
+
+		Random():gen(rd()){}
+	};
 
 	template<typename Tv>
 	vector<size_t> flipIndex(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
@@ -475,7 +491,7 @@ namespace laplacians {
 
 		return Res;
 	}
-
+	
 	template<typename Tv>
 	CompressedMatrix<Tv, blaze::columnMajor> wtedEdgeVertexMat(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
 		vector<size_t> ai, aj;

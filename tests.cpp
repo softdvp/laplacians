@@ -10,6 +10,7 @@
 using blaze::DynamicVector;
 using blaze::CompressedMatrix;
 using namespace std;
+using namespace laplacians;
 
 #include "tests.h"
 
@@ -869,6 +870,17 @@ void CollectionFunctionTest() {
 	LLp<double>* ll = llmatp.cols[0];
 
 	assert(round(ll->val) == 7 && round(ll->next->val) == 4 && round(ll->next->next->val) == 1);
+
+	// Test random function
+	Random<double> rnd;
+
+	for (size_t i = 0; i < 10; i++)
+	{
+		cout << rnd.rand0_1()<<" ";
+	}
+
+	cout << endl;
+
 }
 
 	
