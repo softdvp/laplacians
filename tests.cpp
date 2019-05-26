@@ -718,8 +718,9 @@ void CollectionFunctionTest() {
 
 	SolverA<double> ch_sddmv = chol_sddm<double>();
 	SubSolver<double> SolveA1v = ch_sddmv(a);
+	DynamicVector<double> x11 = SolveA1v(b1, pcgits);
 
-	l2 = norm(a*SolveA1v(b1) - b1);
+	l2 = norm(a*x11 - b1);
 
 	//cout << "norm2(ax-b)=" << l2 << endl;
 

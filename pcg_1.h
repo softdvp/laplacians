@@ -191,7 +191,7 @@ namespace laplacians {
 	{
 		Factorization<Tv> fact = cholesky(pre);
 
-		auto F = [=](const DynamicVector<Tv> &b) {
+		SolverB<Tv> F = [=](const DynamicVector<Tv> &b) {
 			DynamicVector<Tv> x = chol_subst(fact.Lower, b);
 			return x;
 		};
@@ -200,19 +200,19 @@ namespace laplacians {
 	}
 
 	template<typename Tv>
-	DynamicVector<Tv> pcgSolver(const CompressedMatrix<Tv, blaze::columnMajor>& mat, SolverB<Tv> pre, vector<size_t>& pcgIts,
+	SubSolver<Tv> pcgSolver(const CompressedMatrix<Tv, blaze::columnMajor>& mat, SolverB<Tv> pre, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false) {
 
-		return [=, &mat, &pcgIts](const DynamicVector<Tv> &b) {
+		return [=, &mat](const DynamicVector<Tv> &b, vector<size_t>& pcgIts) {
 			return pcg(mat, b, pre, pcgIts, tol, maxits, maxtime, verbose);
 		};
 	}
 
 	template<typename Tv>
-	DynamicVector<Tv> pcgSolver(const CompressedMatrix<Tv, blaze::columnMajor>& mat, const CompressedMatrix<Tv, blaze::columnMajor>& pre, vector<size_t>& pcgIts,
+	SubSolver<Tv> pcgSolver(const CompressedMatrix<Tv, blaze::columnMajor>& mat, const CompressedMatrix<Tv, blaze::columnMajor>& pre, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false) {
 
-		return [=, &mat, &pcgIts](const DynamicVector<Tv> &b) {
+		return [=, &mat](const DynamicVector<Tv> &b, vector<size_t>& pcgIts) {
 			return pcg(mat, b, pre, pcgIts, tol, maxits, maxtime, verbose);
 		};
 	}

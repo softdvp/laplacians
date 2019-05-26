@@ -47,8 +47,7 @@ using SolverBMat = function<DynamicVector<Tv>(const CompressedMatrix<Tv, blaze::
 //Result of SolverA functor
 //Convert SolverA to a function with 1 paramater B - SolverB
 template <typename Tv>
-using SubSolverFuncMat = function <DynamicVector<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
-	double, bool, ApproxCholParams)>;
+using SubSolverFuncMat = function <DynamicVector<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&)>;
 
 template <typename Tv>
 class SubSolverMat {
@@ -58,32 +57,27 @@ public:
 
 	SubSolverMat(SolverBMat<Tv> solver) {
 
-		Solver = [=](const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts,
-			float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-			ApproxCholParams params = ApproxCholParams()) {
+		Solver = [=](const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts) {
 
 			return solver(b);
 		};
 	}
 
-	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts,
-		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-		ApproxCholParams params = ApproxCholParams()) {
+	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts) {
 
-		return Solver(b, pcgIts, tol, maxits, maxtime, verbose, params);
+		return Solver(b, pcgIts);
 	}
 
 	DynamicVector<Tv>operator()(const CompressedMatrix<Tv, blaze::columnMajor> &b) {
 		vector<size_t> pcgIts;
 
-		return Solver(b, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+		return Solver(b, pcgIts);
 	}
 };
 
 // Function: pass A matrix, return SubSolver
 template <typename Tv>
-using SolverAFuncMat = std::function<SubSolverMat<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
-	double, bool, ApproxCholParams)>;
+using SolverAFuncMat = std::function<SubSolverMat<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&)>;
 
 template <typename Tv>
 class SolverAMat {
@@ -91,16 +85,14 @@ class SolverAMat {
 public:
 	SolverAMat(SolverAFuncMat<Tv> solver) : Solver(solver) {}
 
-	SubSolverMat<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
-		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-		ApproxCholParams params = ApproxCholParams()) {
+	SubSolverMat<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts) {
 
-		return Solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
+		return Solver(a, pcgIts);
 	}
 
 	SubSolverMat<Tv> operator()(const CompressedMatrix<Tv, blaze::columnMajor> &a) {
 		vector<size_t> pcgIts;
-		return Solver(a, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+		return Solver(a, pcgIts);
 	}
 };
 
@@ -116,8 +108,7 @@ using SolverB = function<DynamicVector<Tv>(const DynamicVector<Tv>&)>;
 //Convert SolverA to a function with 1 paramater B - SolverB
 
 template <typename Tv>
-using SubSolverFunc = std::function <DynamicVector<Tv>(const DynamicVector<Tv>&, vector<size_t>&, float, double,
-	double, bool, ApproxCholParams)>;
+using SubSolverFunc = std::function <DynamicVector<Tv>(const DynamicVector<Tv>&, vector<size_t>&)>;
 
 template <typename Tv>
 class SubSolver {
@@ -129,9 +120,7 @@ public:
 
 	SubSolver(SolverB<Tv> solver) {
 
-		Solver = [=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts,
-			float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-			ApproxCholParams params = ApproxCholParams()) {
+		Solver = [=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts) {
 
 			return solver(b);
 		};
@@ -143,21 +132,19 @@ public:
 		return *this;
 	}*/
 
-	DynamicVector<Tv>operator()(const DynamicVector<Tv> &b, vector<size_t>& pcgIts,
-		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
-		ApproxCholParams params = ApproxCholParams()) {
-		return Solver(b, pcgIts, tol, maxits, maxtime, verbose, params);
+	DynamicVector<Tv>operator()(const DynamicVector<Tv> &b, vector<size_t>& pcgIts) {
+		return Solver(b, pcgIts);
 	}
 
 	DynamicVector<Tv>operator()(const DynamicVector<Tv> &b) {
 		vector<size_t> pcgIts;
-		return Solver(b, pcgIts, 1e-6F, HUGE_VAL, HUGE_VAL, false, ApproxCholParams());
+		return Solver(b, pcgIts);
 	}
 };
 
 // Function: pass A matrix, return SubSolver
 template <typename Tv>
-using SolverAFunc = std::function<SubSolver<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
+using SolverAFunc = function<SubSolver<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
 	double, bool, ApproxCholParams)>;
 
 template <typename Tv>

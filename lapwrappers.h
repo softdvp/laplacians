@@ -15,8 +15,7 @@ using namespace std::chrono;
 namespace laplacians {
 
 	template <typename Tv>
-	DynamicVector<Tv> nullSolver(const DynamicVector<Tv>& a, vector<size_t>& pcg, float f, double d,
-		double d1, bool b, ApproxCholParams prm) {
+	DynamicVector<Tv> nullSolver(const DynamicVector<Tv>& a, vector<size_t>& pcg) {
 
 		return DynamicVector<Tv>(1, 0);
 	}
@@ -64,15 +63,13 @@ namespace laplacians {
 
 	//Apply the ith solver on the ith component
 	template <typename Tv>
-	SolverB<Tv> BlockSolver(const vector<vector<size_t>> &comps, vector<SubSolver<Tv>> &solvers,
+	SubSolver<Tv> BlockSolver(const vector<vector<size_t>> &comps, vector<SubSolver<Tv>> &solvers,
 		vector<size_t>& pcgIts, float tol = 1e-6F, double maxits = HUGE_VAL, double maxtime = HUGE_VAL,
 		bool verbose = false) {
 
-		return SolverB<Tv>([=, &pcgIts](const DynamicVector<Tv> &b) {
+		return SubSolver<Tv>([=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts) mutable {
 
 			vector<size_t> pcgTmp;
-
-			vector<SubSolver<Tv>> l_solvers = solvers;
 
 			if (pcgIts.size()) {
 				pcgIts[0] = 0;
@@ -84,7 +81,7 @@ namespace laplacians {
 			for (size_t i = 0; i < comps.size(); ++i) {
 				vector<size_t> ind = comps[i];
 				DynamicVector<Tv> bi = index(b, ind);
-				DynamicVector<Tv> solution = (l_solvers[i])(bi, pcgTmp, tol, maxits, maxtime, verbose);
+				DynamicVector<Tv> solution = (solvers[i])(bi, pcgTmp);
 
 				index(x, ind, solution);
 
@@ -98,7 +95,7 @@ namespace laplacians {
 	}
 
 	template <typename Tv>
-	SolverBMat<Tv> wrapInterfaceMat(const FactorSolver<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a,
+	SubSolverMat<Tv> wrapInterfaceMat(const FactorSolver<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a,
 		vector<size_t>& pcgIts, float tol = 0,
 		double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
@@ -113,7 +110,7 @@ namespace laplacians {
 			std::cout << "Solver build time: " << msec << " ms.";
 		}
 
-		return SolverBMat<Tv>([=, &pcgIts](const CompressedMatrix<Tv, blaze::columnMajor> &b)->DynamicVector<Tv> {
+		return SubSolverMat<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &b, vector<size_t>& pcgIts) {
 
 			if (pcgIts.size())
 				pcgIts[0] = 0;
@@ -142,7 +139,7 @@ namespace laplacians {
 	}
 
 	template <typename Tv>
-	SolverB<Tv> wrapInterface(const FactorSolver<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a,
+	SubSolver<Tv> wrapInterface(const FactorSolver<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a,
 		vector<size_t>& pcgIts, float tol = 0,
 		double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
@@ -157,7 +154,7 @@ namespace laplacians {
 			std::cout << "Solver build time: " << msec << " ms.";
 		}
 
-		return SolverB<Tv>([=, &pcgIts](const DynamicVector<Tv> &b)->DynamicVector<Tv> {
+		return SubSolver<Tv>([=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts)->DynamicVector<Tv> {
 
 			if (pcgIts.size())
 				pcgIts[0] = 0;
@@ -198,7 +195,7 @@ namespace laplacians {
 
 	//			Applies a Laplacian `solver` that satisfies our interface to each connected component of the graph with adjacency matrix `a`.
 	template <typename Tv>
-	SolverB<Tv> lapWrapConnected(SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
+	SubSolver<Tv> lapWrapConnected(SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams()) {
 
@@ -218,12 +215,11 @@ namespace laplacians {
 		CompressedMatrix<Tv, blaze::columnMajor>lasub = index<Tv>(la, leave, leave);
 		SubSolver<Tv> subSolver = solver(lasub, pcgIts, tol, maxits, maxtime, verbose, params);
 
-		return SolverB<Tv>([=, &pcgIts](const DynamicVector<Tv> &b) {
+		return SubSolver<Tv>([=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts) mutable {
 
-			SubSolver<Tv> l_subSolver = subSolver;
 			DynamicVector<Tv> bs = index(b, leave) - DynamicVector<Tv>(leave.size(), mean(b));
 
-			DynamicVector<Tv> xs = l_subSolver(bs, pcgIts, tol, maxits, maxtime, verbose);
+			DynamicVector<Tv> xs = subSolver(bs, pcgIts);
 
 			DynamicVector<Tv> x(b.size(), 0);
 			index(x, leave, xs);
@@ -245,7 +241,7 @@ namespace laplacians {
 	}
 
 	template <typename Tv>
-	SolverB<Tv> lapWrapComponents(SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
+	SubSolver<Tv> lapWrapComponents(SolverA<Tv> solver, const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
 	{
@@ -293,7 +289,7 @@ namespace laplacians {
 						subSolver = lapWrapConnected<Tv>(chol_sddm<Tv>(), asub, pcgits);
 					}
 					else {
-						subSolver = solver(a, pcgIts, tol, maxits, maxtime, verbose, params);
+						subSolver = solver(a, pcgIts);
 					}
 
 				solvers.push_back(subSolver);
@@ -311,6 +307,8 @@ namespace laplacians {
 
 	template <typename Tv>
 	SolverA<Tv> lapWrapComponents(const SolverA<Tv> solver) {
+		//function<SubSolver<Tv>(const CompressedMatrix<Tv, blaze::columnMajor>&, vector<size_t>&, float, double,
+		//double, bool, ApproxCholParams)>
 
 		return SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 			double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
@@ -326,7 +324,7 @@ namespace laplacians {
 	}
 
 	template <typename Tv>
-	SolverB<Tv> sddmWrapLap(SolverA<Tv> lapSolver, const CompressedMatrix<Tv, blaze::columnMajor> &sddm, vector<size_t>& pcgIts,
+	SubSolver<Tv> sddmWrapLap(SolverA<Tv> lapSolver, const CompressedMatrix<Tv, blaze::columnMajor> &sddm, vector<size_t>& pcgIts,
 		float tol = 1e-6, double maxits = HUGE_VAL, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
 	{
@@ -339,14 +337,12 @@ namespace laplacians {
 
 		SubSolver<Tv> F = lapSolver(a1, pcgIts, tol, maxits, maxtime, verbose, params);
 
-		return [=, &pcgIts](const DynamicVector<Tv> &b) {
+		return [=](const DynamicVector<Tv> &b, vector<size_t>& pcgIts) mutable {
 			DynamicVector<Tv> sb(b.size() + 1);
 			subvector(sb, 0, b.size()) = b;
 			sb[b.size()] = -blaze::sum(b);
 
-			SubSolver<Tv>l_F = F;
-
-			DynamicVector<Tv> xaug = l_F(sb, pcgIts, tol, maxits, maxtime, verbose, params);
+			DynamicVector<Tv> xaug = F(sb, pcgIts, tol, maxits, maxtime, verbose, params);
 
 			xaug = xaug - DynamicVector<Tv>(xaug.size(), xaug[xaug.size() - 1]);
 

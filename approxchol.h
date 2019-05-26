@@ -568,7 +568,7 @@ namespace laplacians {
 	}
 
 	template<typename Tv>
-	SolverB<Tv> approxchol_lapGreedy(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+	SubSolver<Tv> approxchol_lapGreedy(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
 		const ApproxCholParams params = ApproxCholParams())
 	{
@@ -582,15 +582,15 @@ namespace laplacians {
 			return LDLsolver(ldli, b);
 		};
 
-		return [=, &pcgIts](const DynamicVector<Tv>& b) {
+		return SubSolver<Tv>([=](const DynamicVector<Tv>& b, vector<size_t>& pcgIts) {
 			Tv mn = mean(b);
 			DynamicVector<Tv> b1 = b - mn;
 			pcg(la, b1, F, pcgIts, tol, maxits, maxtime, verbose, params.stag_test);
-		};
+		});
 	}
 
 	template<typename Tv>
-	SolverB<Tv> approxchol_lap1(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+	SubSolver<Tv> approxchol_lap1(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
 		const ApproxCholParams params = ApproxCholParams())
 	{
@@ -599,7 +599,7 @@ namespace laplacians {
 	}
 
 	template<typename Tv>
-	SolverB<Tv> approxchol_lap(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
+	SubSolver<Tv> approxchol_lap(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
 		const ApproxCholParams params = ApproxCholParams())
 	{
