@@ -13,7 +13,8 @@ using LinearAlgebra
 
 using Statistics
 
-import Base: ==, hash, +, *, transpose, adjoint
+import Base: ==, hash, +, *, transpose
+import Laplacians:grid2
 import SparseArrays: nnz
 
 V06 = RandomV06.V06
@@ -26,12 +27,12 @@ include("sparsify.jl")
 
 G = grid2(100)
 
-
 @show n = size(G,1)
 d_ave = nnz(G)/n
 
 Gp = power(G,15)
-nnz(Gp)/n
+@show nnz(Gp)/n
+
 
 Gsparse = sparsify(Gp, ep=1)
 println("Average degree of sparsifier: ",nnz(Gsparse)/n)
@@ -39,4 +40,3 @@ println("Average degree of sparsifier: ",nnz(Gsparse)/n)
 #println("Approximation quality: ", approxQual(Gp, Gsparse))
 #=
 =#
-

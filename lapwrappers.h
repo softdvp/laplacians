@@ -331,7 +331,7 @@ namespace laplacians {
 		CompressedMatrix<Tv, blaze::columnMajor> a;
 		DynamicVector<Tv> d;
 
-		tie(a, d) = adj(sddm);
+		auto [a, d] = adj(sddm);
 
 		CompressedMatrix<Tv, blaze::columnMajor>a1 = extendMatrix(a, d);
 

@@ -13,6 +13,7 @@
 using namespace std;
 
 using blaze::CompressedMatrix;
+using blaze::CompressedVector;
 using blaze::DynamicMatrix;
 using blaze::DynamicVector;
 using blaze::columnwise;
@@ -30,6 +31,19 @@ namespace laplacians {
 
 		Tv rand0_1() {
 			return generate_canonical<Tv, 8*sizeof(Tv)>(gen);
+		}
+
+		Tv randn() {
+			return (rand0_1() - 0.5) * 6;
+		}
+
+		DynamicVector<Tv> randv(size_t sz) {
+			DynamicVector<Tv> res(sz);
+
+			for (size_t i = 0; i < sz; i++)
+				res[i] = rand0_1();
+
+			return res;
 		}
 
 		Random():gen(rd()){}
@@ -160,8 +174,8 @@ namespace laplacians {
 
 	// vector index of matrix
 	template <typename Tv>
-	CompressedMatrix<Tv> index(const CompressedMatrix <Tv> &A, const vector<size_t> &idx1, const vector<size_t> &idx2) {
-		DynamicMatrix<Tv> Res(idx1.size(), idx2.size(), 0);
+	CompressedMatrix<Tv, blaze::columnMajor>index(const CompressedMatrix<Tv, blaze::columnMajor>&A, const vector<size_t> &idx1, const vector<size_t> &idx2) {
+		CompressedMatrix<Tv, blaze::columnMajor>Res(idx1.size(), idx2.size(), 0);
 
 		for (size_t i = 0; i < idx1.size(); ++i)
 			for (size_t j = 0; j < idx2.size(); j++)
@@ -170,16 +184,36 @@ namespace laplacians {
 		return Res;
 	}
 
+	// vector index of matrix
 	template <typename Tv>
-	CompressedMatrix<Tv> index(const CompressedMatrix <Tv> &A, const vector<size_t> &idx) {
-		vector<size_t> idx0{ 0 };
+	DynamicVector<Tv> index(const CompressedMatrix<Tv, blaze::columnMajor>& A, const vector<size_t>& idx1, const size_t idx2) {
+		DynamicVector<Tv> Res(idx1.size(), 0);
 
-		return index(A, idx, idx0);
+		for (size_t i = 0; i < idx1.size(); ++i)
+			Res[i] = A(idx1[i], idx2);
+
+		return Res;
+	}
+
+	template <typename Tv>
+	DynamicVector<Tv> index(const CompressedMatrix<Tv, blaze::columnMajor>& A, const size_t idx1, const vector<size_t>& idx2) {
+		DynamicVector<Tv> Res(idx2.size(), 0);
+
+		for (size_t i = 0; i < idx2.size(); ++i)
+			Res[i] = A(idx1, idx2[i]);
+
+		return Res;
+	}
+
+	template <typename Tv>
+	DynamicVector<Tv> index(const CompressedMatrix<Tv, blaze::columnMajor>&A, const vector<size_t> &idx) {
+		
+		return index(A, idx, 0);
 	}
 
 	//vector index of vector
 	template <typename Tv>
-	DynamicVector<Tv> index(DynamicVector<Tv> vec, vector<size_t> idx) {
+	DynamicVector<Tv> index(const DynamicVector<Tv> &vec, const vector<size_t> &idx) {
 		DynamicVector<Tv>res(idx.size());
 
 		for (size_t i = 0; i < idx.size(); i++) {
@@ -201,6 +235,50 @@ namespace laplacians {
 	}
 
 	template <typename Tv>
+	void index(CompressedMatrix<Tv, blaze::columnMajor>& mout, const vector<size_t>& idx, size_t idx2, const DynamicVector<Tv>& vin) {
+
+		assert(idx.size() == vin.size());
+
+		for (size_t i = 0; i < idx.size(); i++)
+		{
+			mout(idx[i], idx2) = vin[i];
+		}
+	}
+
+	template <typename Tv>
+	DynamicVector<Tv>indexbool(const DynamicVector<Tv> &vect, const vector<bool> &idx) {
+		
+		assert(vect.size() == idx.size());
+		
+		vector<Tv> v;
+
+		for (size_t i = 0; i < idx.size(); i++)
+			if (idx[i])
+				v.push_back(vect[i]);
+
+		DynamicVector<Tv> res(v.size());
+
+		for (size_t i = 0; i < v.size(); i++)
+		{
+			res[i] = v[i];
+		}
+
+		return res;
+	}
+
+	inline vector<size_t> indexbool(const vector<size_t>& vect, const vector<bool>& idx) {
+		assert(vect.size() == idx.size());
+
+		vector<size_t> v;
+
+		for (size_t i = 0; i < idx.size(); i++)
+			if (idx[i])
+				v.push_back(vect[i]);
+
+		return v;
+	}
+
+	template <typename Tv>
 	bool testZeroDiag(const Tv &a) {
 
 		size_t n = a.rows();
@@ -212,7 +290,7 @@ namespace laplacians {
 
 		return true;
 	}
-
+	 
 	template <typename Tv>
 	DynamicVector<Tv>dynvec(const vector<Tv> &v) {
 		DynamicVector<Tv>res(v.size());
@@ -401,6 +479,22 @@ namespace laplacians {
 	}
 
 	template<typename Tv>
+	CompressedMatrix<Tv, blaze::columnMajor> sparse(vector<size_t> I, vector<size_t> J, DynamicVector<Tv> V, size_t m, size_t n) {
+		CompressedMatrix<Tv, blaze::columnMajor>res(m, n);
+
+		size_t nnz = I.size();
+
+		res.reserve(nnz);
+
+		for (size_t l = 0; l < nnz; ++l) {
+			res(I[l], J[l]) = V[l];
+		}
+
+		return res;
+
+	}
+
+	template<typename Tv>
 	CompressedMatrix<Tv, blaze::columnMajor> power(const CompressedMatrix<Tv, blaze::columnMajor> &A, const int k) {
 		CompressedMatrix<Tv, blaze::columnMajor>ap;
 
@@ -497,18 +591,21 @@ namespace laplacians {
 
 		return Res;
 	}
+
+	//generates vector with values of [start...end)
+	inline vector<size_t> collect(size_t start, size_t end) {
+		vector<size_t> res(end);
+
+		for (size_t i = 0; i < end; i++)
+			res[i] = i;
+		
+		return res;
+	}
 	
 	template<typename Tv>
 	CompressedMatrix<Tv, blaze::columnMajor> wtedEdgeVertexMat(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
-		// C++11
-		vector<size_t> ai, aj;
-		DynamicVector<Tv> av;
 
-		tie(ai, aj, av) = findnz(triu(mat));
-		
-
-		// C++17 
-//		auto [ai, aj, av] = findnz(triu(mat));
+		auto [ai, aj, av] = findnz(triu(mat));
 
 		size_t m = ai.size();
 		size_t n = mat.rows();

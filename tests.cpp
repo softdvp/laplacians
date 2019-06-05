@@ -557,10 +557,7 @@ void CollectionFunctionTest() {
 	assert(comp[0][1] == 2 && comp[1][1] == 3 && comp[2][1] == 5);
 
 	CompressedMatrix<int, blaze::columnMajor> Ma{ {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
-
-	vector<size_t> Idx1{ 0, 1 }, Idx2{ 1, 2 };
-
-	CompressedMatrix<int, blaze::columnMajor> Midx = index<int>(Ma, Idx1, Idx2);
+	CompressedMatrix<int, blaze::columnMajor> Midx = index<int>(Ma, { 0, 1 }, { 1, 2 });
 
 	//cout << Midx << endl;
 
@@ -568,36 +565,83 @@ void CollectionFunctionTest() {
 
 	vector<size_t> Idx0{ 0 };
 
-	Midx = index<int>(Ma, Idx1, Idx0);
+	Midx = index<int>(Ma, { 0, 1 }, Idx0);
 	  
 	//cout << Midx << endl;
 
 	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);
 
-	Midx = index<int>(Ma, Idx1);
+	DynamicVector<int> Vidx;
+
+	Vidx = index<int>(Ma, { 0, 1 });
 	//cout << Midx << endl;
 
-	assert(Midx(0, 0) == 1 && Midx(1, 0) == 4);
+	assert(Vidx[0] == 1 && Vidx[1] == 4);
 
 	DynamicVector<int> vout(10, 0), vin{ 3, 5, 9 };
 
-	vector<size_t> idx{ 1, 2, 6 };
-
-	index(vout, idx, vin);
+	index(vout, { 1, 2, 6 }, vin);
 
 	//cout << "vout[idx]=vin\n" << vout << endl;
 
 	assert(vout[1] == 3 && vout[2] == 5 && vout[6] == 9);
 
-	idx = { 1, 2 };
+	
 	//cout << vout << endl;
 
-	vout = index(vin, idx);
+	vout = index<int>(vin, { 1, 2 });
 
 	//cout << "vout=vin[idx]\n" << vout << endl;
 
 	assert(vout[0] == 5 && vout[1] == 9);
 
+	CompressedMatrix<int, blaze::columnMajor> Midx08{ {0,1,2}, {3,4,5}, {6,7,8} };
+	DynamicVector<int> v11;
+	
+	v11 = index<int>(Midx08, { 0,1,2 }, 1);
+	cout << endl << v11 << endl;
+	assert(v11[0] == 1 && v11[1] == 4 && v11[2] == 7);
+
+	v11 = index<int>(Midx08, 1, { 0, 1, 2 });
+	//cout << endl << v11 << endl;
+	assert(v11[0] == 3 && v11[1] == 4 && v11[2] == 5);
+
+	CompressedMatrix<int, blaze::columnMajor> Midx00(3, 3);
+
+	index(Midx00, { 0,1,2 }, 1, vin);
+
+	//cout << endl << Midx00 << endl;
+
+	assert(Midx00(0, 1) == 3 && Midx00(1, 1) == 5 && Midx00(2, 1) == 9);
+
+	DynamicVector<int> v10{ 1,2,3,4,5 };
+
+	DynamicVector<int> vbool;
+	vbool = indexbool(v10, { 0, 0, 1, 0, 1 });
+	cout << endl << vbool << endl;
+	
+	vector<size_t> vsz = indexbool({ 1, 2, 3, 4, 5 }, { 0, 0, 1, 0, 1 });
+
+	for (size_t i = 0; i < vsz.size(); i++)
+		cout << vsz[i]<<" ";
+
+	cout << endl << endl;
+
+	//Test sparse function
+
+	//A = sparse(I, J, V, 10, 10)
+
+	vector<size_t> I1{ 1, 2, 0, 5, 8, 0, 5, 7, 1, 3, 8, 4, 8, 1, 5, 7 };
+	vector<size_t> J1{ 0, 0, 1, 1, 1, 2, 3, 4, 5, 5, 5, 7, 7, 8, 8, 8 };
+	DynamicVector<int> V1{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+	CompressedMatrix<int, blaze::columnMajor> sparseRes;
+	sparseRes = sparse(I1, J1, V1, 10, 10);
+
+	cout << sparseRes << endl;
+
+	assert(sparseRes(1, 0) == 1 && sparseRes(1, 8) == 1 && sparseRes(7, 8)==1);
+	
 	// Cholesky decomposition
 	// Test cholesky function
 
@@ -788,10 +832,7 @@ void CollectionFunctionTest() {
 
 	CompressedMatrix<double, blaze::columnMajor>lapGraph = lap(Graph1comp);
 
-	CompressedMatrix<double, blaze::columnMajor> am;
-	DynamicVector<double> dd;
-
-	tie(am, dd) = adj(lapGraph);
+	auto [am, dd] = adj(lapGraph);
 		
 	//cout << "\nadj=\n" << am << endl;
 
@@ -820,10 +861,7 @@ void CollectionFunctionTest() {
 
 	//Test findnz function
 
-	vector<size_t> iv, jv;
-	DynamicVector<double> vv;
-
-	tie(iv, jv, vv) = findnz(Graph1comp);
+	auto [iv, jv, vv] = findnz(Graph1comp);
 
 	/*cout << "iv= ";
 	for (size_t i = 0; i < iv.size(); i++)
@@ -866,7 +904,7 @@ void CollectionFunctionTest() {
 
 	LLmatp<double> llmatp(LMat);
 
-	print_ll_col(llmatp, 0);
+	//print_ll_col(llmatp, 0);
 
 	LLp<double>* ll = llmatp.cols[0];
 
@@ -875,13 +913,21 @@ void CollectionFunctionTest() {
 	// Test random function
 	Random<double> rnd;
 
-	for (size_t i = 0; i < 10; i++)
-	{
-		cout << rnd.rand0_1()<<" ";
-	}
+//	for (size_t i = 0; i < 10; i++)
+//		cout << rnd.rand0_1()<<" ";
+	
+//	cout << endl;
 
-	cout << endl;
+//for (size_t i = 0; i < 10; i++)
+//		cout << rnd.randn() << " ";
 
+	//cout << endl;
+
+	vector<size_t> col = collect(0, 10);
+	//for (size_t i = 0; i < col.size(); i++)
+	//cout << col[i] << " ";
+
+	//cout << endl;
 }
 
 	

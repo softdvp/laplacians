@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cmath>
 #include <blaze/Math.h>
 #include <vector>
+#include <algorithm>
 #include "solvertypes.h"
 #include "approxchol.h"
 #include "graphalgs.h"
@@ -19,62 +21,76 @@ using blaze::DynamicVector;
 	`ep` should be less than 1.
 */
 
-template<typename Tv>
-CompressedMatrix<Tv, blaze::columnMajor> sparsify(const CompressedMatrix<Tv, blaze::columnMajor>& a,
-	float ep=0.3F, float matrixConcConst=4.0F, float JLfac=4.0F) {
+namespace laplacians {
+	template<typename Tv>
+	CompressedMatrix<Tv, blaze::columnMajor> sparsify(const CompressedMatrix<Tv, blaze::columnMajor>& a,
+		float ep = 0.3F, float matrixConcConst = 4.0F, float JLfac = 4.0F) {
 
-	vector<size_t> pcgIts;
+		Random<double> rnd;
 
-	SolverB<Tv> f = approxchol_lap(a, PcgIts, 1e-2);
+		vector<size_t> pcgIts;
 
-	size_t n = a.rows();
+		SolverB<Tv> f = approxchol_lap(a, pcgIts, 1e-2F);
 
-	size_t k = roundl(JLfac*log(n));
+		size_t n = a.rows();
+		size_t k = (size_t)round(JLfac * log(n)); //number of dims for JL
 
-	CompressedMatrix<Tv, blaze::columnMajor> U = wtedEdgeVertexMat(a);
+		CompressedMatrix<Tv, blaze::columnMajor> U = wtedEdgeVertexMat(a);
 
-	size_t m = U.rows();
-	double R = randn(m, k);
-	CompressedMatrix<Tv, blaze::columnMajor> UR = ctrans(U)*R;
-	
+		size_t m = U.rows();
 
+		DynamicMatrix<double, blaze::columnMajor> R;
+
+		for (size_t i = 0; i < m; i++)
+			for (size_t j = 0; j < k; j++)
+				R(i, j) = rnd.randn();
+
+		CompressedMatrix<Tv, blaze::columnMajor> UR = adjoint(U) * R;
+
+		CompressedMatrix<Tv, blaze::columnMajor> V(n, k, 0);
+
+		vector<size_t> idx = collect(0, V.rows());
+
+		for (size_t i = 0; i < k; i++) {
+			DynamicVector<Tv> x, b;
+
+			b = index(UR, idx, i);
+			x = f(b);
+
+			index(V, idx, i, x);
+		}
+
+		auto [ai, aj, av] = findnz(triu(a));
+		DynamicVector<Tv> prs(av.size());
+		for (size_t h = 0; h < av.size(); h++)
+		{
+			size_t i = ai[h];
+			size_t j = aj[h];
+
+			DynamicVector<Tv>vi, vj;
+			vi = index(V, i, idx);
+			vj = index(V, j, idx);
+			Tv nr = std::pow(norm(vi - vj), 2 / k);
+			Tv tmp = av[h] * nr * matrixConcConst * log(n) / std::pow(ep, 2);
+			prs[h] = (1 < tmp) ? 1 : tmp;
+		}
+
+		vector<bool>ind(prs.size());
+		DynamicVector<double> rndvec = rnd.randv(prs.size());
+
+		for (size_t i = 0; i < prs.size(); i++)
+			ind[i] = rndvec[i] < prs[i];
+
+		vector<size_t> ai_ind = indexbool(ai, ind);
+		vector<size_t> aj_ind = indexbool(aj, ind);
+		DynamicVector<Tv> av_ind = indexbool(av, ind);
+		DynamicVector<Tv> prs_ind = indexbool(prs, ind);
+
+		DynamicVector<Tv> divs = av_ind / prs_ind;
+		CompressedMatrix<Tv, blaze::columnMajor> as = sparse(ai_ind, aj_ind, divs, n, n);
+
+		as = as + adjoint(as);
+
+		return as;
+	}
 }
-
-
-/*
-function sparsify(a; ep=0.3, matrixConcConst=4.0, JLfac=4.0)
-
-  f = approxchol_lap(a,tol=1e-2);
-
-  n = size(a,1)
-  k = round(Int, JLfac*log(n)) # number of dims for JL
-
-  U = wtedEdgeVertexMat(a)
-  m = size(U,1)
-  R = randn(Float64, m,k)
-  UR = U'*R;
-
-  V = zeros(n,k)
-  for i in 1:k
-	V[:,i] = f(UR[:,i])
-  end
-
-  (ai,aj,av) = findnz(triu(a))
-  prs = zeros(size(av))
-  for h in 1:length(av)
-	  i = ai[h]
-	  j = aj[h]
-	  prs[h] = min(1,av[h]* (norm(V[i,:]-V[j,:])^2/k) * matrixConcConst *log(n)/ep^2)
-  end
-
-  ind = rand(Float64,size(prs)) .< prs
-
-  as = sparse(ai[ind],aj[ind],av[ind]./prs[ind],n,n)
-  as = as + as'
-
-  return as
-
-end
-
-*/
-

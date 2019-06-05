@@ -221,9 +221,12 @@ namespace laplacians {
 		vector<Tv> fval;
 		vector<Tv> d;
 
-		LDLinv(CompressedMatrix<Tv, blaze::columnMajor> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0) {}
-		LDLinv(LLMatOrd<Tv> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0) {}
-		LDLinv(LLmatp<Tv> A) : col(A.rows() - 1, 0), colptr(A.rows(), 0), d(A.rows(), 0) {}
+		LDLinv(CompressedMatrix<Tv, blaze::columnMajor> A) : col(A.columns() - 1, 0), colptr(A.columns(), 0), 
+			d(A.columns(), 0) /* rowval and fval are empty*/	{}
+
+		LDLinv(LLMatOrd<Tv> A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
+
+		LDLinv(LLmatp<Tv> A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
 	};
 
 	/*
@@ -301,7 +304,7 @@ namespace laplacians {
 		while (ll->next) {
 			if (abs(ll->val) < 1e-6)
 				if (++len > colspace.size())
-					colspace.push(ll);
+					colspace.push_back(ll);
 				else colspace[len - 1] = ll;
 
 			ll = ll->next;
@@ -309,7 +312,7 @@ namespace laplacians {
 
 		if (abs(ll->val) < 1e-6)
 			if (++len > colspace.size())
-				colspace.push(ll);
+				colspace.push_back(ll);
 			else colspace[len - 1] = ll;
 
 		return len;
@@ -334,7 +337,7 @@ namespace laplacians {
 			}
 			else
 			{
-				c[ptr]->val += c[i].val;
+				c[ptr]->val += c[i]->val;
 				c[i]->reverse->val = 0;
 
 				pq.dec(currow);
@@ -361,7 +364,7 @@ namespace laplacians {
 		{
 			if (c[i].row != currow) {
 
-				c[ptr] = LLcol<Tv>(currow, curptr, curval); //next is abuse here: reall keep where it came from.
+				c[ptr] = LLcol<Tv>(currow, curptr, curval); //next is abuse here: really keep where it came from.
 				++ptr;
 
 				currow = c[i].row;
@@ -389,7 +392,7 @@ namespace laplacians {
 		LDLinv ldli(a);
 		size_t ldli_row_ptr = 0;
 
-		vector<size_t> d(n);
+		vector<Tv> d(n);
 		ApproxCholPQ pq(a.degs);
 
 		size_t it = 0;
@@ -445,10 +448,10 @@ namespace laplacians {
 				size_t koff;
 
 				if (firstit != cumspace.end())
-					koff = *firstit;
+					koff = firstit - cumspace.begin();
 				else koff = 0;
 
-				Tv k = colspace[koff].row;
+				size_t k = colspace[koff]->row;
 				pq.inc(k);
 				Tv newEdgeVal = f * (1 - f)*wdeg;
 
@@ -459,7 +462,7 @@ namespace laplacians {
 
 				//fix row j in col k
 
-				Tv khead = a.cols[k];
+				LLp<Tv>* khead = a.cols[k];
 				a.cols[k] = ll;
 				ll->next = khead;
 				ll->reverse = revj;
@@ -562,7 +565,9 @@ namespace laplacians {
 		backward(ldli, y);
 
 		Tv mu = mean(y);
-		y -= mu;
+
+		for (size_t i = 0; i < y.size(); i++)
+			y[i] = y[i]-mu;
 
 		return y;
 	}
@@ -570,7 +575,7 @@ namespace laplacians {
 	template<typename Tv>
 	SubSolver<Tv> approxchol_lapGreedy(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
-		const ApproxCholParams params = ApproxCholParams())
+		ApproxCholParams params = ApproxCholParams())
 	{
 		//auto t1 = high_resolution_clock::now();
 
@@ -584,32 +589,45 @@ namespace laplacians {
 
 		return SubSolver<Tv>([=](const DynamicVector<Tv>& b, vector<size_t>& pcgIts) {
 			Tv mn = mean(b);
-			DynamicVector<Tv> b1 = b - mn;
-			pcg(la, b1, F, pcgIts, tol, maxits, maxtime, verbose, params.stag_test);
+			DynamicVector<Tv> b1(b.size());
+			
+			for (size_t i = 0; i < b.size(); i++)
+				b1[i]= b[i] - mn;
+
+			DynamicVector<Tv> res = pcg(la, b1, F, pcgIts, tol, maxits, maxtime, verbose, params.stag_test);
+			return res;
 		});
+
 	}
 
 	template<typename Tv>
 	SubSolver<Tv> approxchol_lap1(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
-		const ApproxCholParams params = ApproxCholParams())
+		ApproxCholParams params = ApproxCholParams())
 	{
 		if (params.order == ApproxCholEnum::Deg) 
-			return approxchol_lapGreedy(a, pcgIts, maxits, maxtime, pcgIts, params);
+			return approxchol_lapGreedy(a, pcgIts, tol, maxits, maxtime, verbose, params);
 	}
 
 	template<typename Tv>
 	SubSolver<Tv> approxchol_lap(const CompressedMatrix<Tv, blaze::columnMajor> &a, vector<size_t>& pcgIts, float tol = 1e-6,
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
-		const ApproxCholParams params = ApproxCholParams())
+		ApproxCholParams params = ApproxCholParams())
 	{
-		return lapWrapComponents(approxchol_lap1, a, pcgIts, tol, maxits, maxtime, false);
+		/*SolverA<Tv> f = SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor>& a, vector<size_t>& pcgIts, float tol = 1e-6,
+			double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false, ApproxCholParams params = ApproxCholParams())
+			{
+				return approxchol_lap1(a, pcgIts, tol, maxits, maxtime, verbose, params);
+			});*/
+
+
+		return lapWrapComponents(SolverA<Tv>(approxchol_lap1<Tv>), a, pcgIts, tol, maxits, maxtime, false);
 	}
 
 	/* ApproxCholPQ
 	It only implements pop, increment key, and decrement key.
 	All nodes with degrees 1 through n appear in their own doubly - linked lists.
-	Nodes of higher degrees are bundled together.
+	Nodes of higher degrees are bundled together.B
 	*/
 
 	inline void ApproxCholPQ::move(size_t i, size_t newkey, size_t oldlist, size_t newlist) {

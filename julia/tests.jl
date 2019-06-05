@@ -11,14 +11,14 @@ include("approxChol_1.jl")
 a=[ 1., 2., 3., 4.]
 b=[5., 4., 0., 1.]
 bzbeta!(2.3, a, b)
-println(a)
+#println(a)
 
 #axpy2! test
 a=[ 1, 2, 3, 4 ]
 b=[5, 4, 0, 1]
 
 axpy2!(4, a, b)
-println(b)
+#println(b)
 
 """
 m=[0 0 0 0; 5 8 0 0; 0 0 3 0; 0 6 0 0]
@@ -71,6 +71,7 @@ A = sparse(I, J, V, 10, 10)
 #A(0, 0) = 1; A(0, 1) = 2; A(1, 0) = 3; A(1, 1) = 4;
 #B(0, 1) = 5; B(1, 0) = 6; B(1, 1) = 7;
 
+"""
 #Test Kronecker product function kron(A, B)
 
 I=[1, 1, 2, 2]
@@ -90,13 +91,13 @@ C=kron(A, B)
 #println(Matrix(C))
 
 
-Out:
+#=Out:
 
 0   5   0  10
 6   7  12  14
 0  15   0  20
 18  21  24  28
-
+=#
 D=flipIndex(C)
 
 #println(D)
@@ -107,14 +108,16 @@ dg=sum(C, dims=1);
 
 #println("sum(C)) = ", dg)
 
-Out: sum(C)) = [24 48 36 72]
+#Out: sum(C)) = [24 48 36 72]
 
 dmatrix=diagmat(C)
 
 #println("diagmat(C)) = ", dmatrix)
-#println("power(C, 2) = ")
-#display(Matrix(power(C, 2)))
+println("power(C, 2) = ")
+display(Matrix(power(C, 2)))
 
+
+"""
 println("\n\nA matrix:")
 display(Matrix(A))
 
@@ -259,7 +262,7 @@ GraphA=[ 0 0 0 1 1;
 		 1 0 1 0 0;
 		 1 0 1 0 0 ]
 
-"""
+#=
 lapGraphA=lap(sparse(GraphA))
 adjGraphA=adj(lapGraphA)
 
@@ -288,4 +291,4 @@ Lmat=[1 2 3; 4 5 6; 7 8 9 ]
 llpm=LLmatp(sparse(Lmat))
 
 print_ll_col(llpm, 1)
-"""
+=#

@@ -69,7 +69,8 @@ namespace laplacians {
 		z = pre(b);
 		p = z;
 
-		Tv rho = r * blaze::trans(z);
+		Tv rho=dot(r,z);
+		
 		Tv best_rho = rho;
 		size_t stag_count = 0;
 
@@ -81,7 +82,7 @@ namespace laplacians {
 		{
 			DynamicVector<Tv> q = mat * p;
 
-			Tv pq = p * blaze::trans(q);
+			Tv pq = dot(p, q);
 
 			if (pq < EPS || pq >= HUGE_VAL) {
 				if (verbose)
@@ -90,7 +91,7 @@ namespace laplacians {
 				break;
 			}
 
-			al = rho / q;
+			al = rho / pq;
 
 			// the following line could cause slowdown
 
@@ -117,7 +118,7 @@ namespace laplacians {
 			z = pre(r);
 
 			Tv oldrho = rho;
-			rho = z * blaze::trans(r); //this is gamma in hypre.
+			rho = dot(z, r); //this is gamma in hypre.
 
 			if (stag_test != 0) // If stag_test=0 skip this check
 				if (rho < best_rho*(1 - (Tv)(1 / stag_test))) {
