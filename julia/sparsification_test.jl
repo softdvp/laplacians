@@ -27,14 +27,14 @@ include("sparsify.jl")
 
 G = grid2(100)
 
-@show n = size(G,1)
+n = size(G,1)
 d_ave = nnz(G)/n
 
 Gp = power(G,15)
-@show nnz(Gp)/n
 
+nnz(Gp)/n
 
-Gsparse = sparsify(Gp, ep=1)
+Gsparse = sparsify(Gp, ep=0.1)
 println("Average degree of sparsifier: ",nnz(Gsparse)/n)
 
 #println("Approximation quality: ", approxQual(Gp, Gsparse))

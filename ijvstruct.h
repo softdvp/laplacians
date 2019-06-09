@@ -15,10 +15,10 @@ namespace laplacians {
 	template <typename Tv>
 	class IJV {
 	public:
-		std::size_t  n;
-		std::size_t nnz;
-		vector<std::size_t> i; //colptr
-		vector<std::size_t> j; //rowval
+		std::size_t  n; // dimension
+		std::size_t nnz; // number of nonzero elements
+		vector<std::size_t> i; // colval
+		vector<std::size_t> j; // rowval
 		DynamicVector<Tv> v; //nonzero elements
 
 		IJV() :n(0), nnz(0), i(0), j(0), v(0) {}

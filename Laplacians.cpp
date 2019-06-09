@@ -4,16 +4,19 @@
 
 #include <iostream>
 #include "tests.h"
+#include "sparsification_test.h"
 
 int main()
 {
 	pcg_tests();
 
-	//IJVtests();
+	IJVtests();
 
 	CollectionTest();
 
 	CollectionFunctionTest();
+
+	sparsification_test();
 
 }
 

@@ -45,17 +45,6 @@ void IJVtests() {
 
 	CompressedMatrix<int, blaze::columnMajor> z{ {0,0,0,0}, {5,8,0,0}, {0,0,3,0}, {0,6,0,0} };
 
-
-	cout << "============================================\n";
-	for (int i = 0; i < z.rows(); i++) {
-		for (int j = 0; j < z.columns(); j++)
-			cout << z(i, j) << " ";
-		cout << endl;
-	}
-
-
-	cout << z << "\n============================================\n";
-
 	//Convert a BLAZE sparse matrix to an IJV
 
 	// A sample of  matrix was taken from 
@@ -64,7 +53,7 @@ void IJVtests() {
 	
 	SparseMatrixCSC<int> CSCMx(m);
 
-	cout << "Original blaze compressed matrix:\n" << m;
+/*	cout << "Original blaze compressed matrix:\n" << m;
 	
 	cout << "\nCSC sparse matrix dump:\n";
 	cout << "CSCMx.m=" << CSCMx.m << endl;
@@ -81,6 +70,7 @@ void IJVtests() {
 	cout << "\n" << "CSCMx.nzval= ";
 	for (size_t k = 0; k < CSCMx.nzval.size(); ++k)
 		cout << CSCMx.nzval[k] << " ";
+*/		
 
 	assert(CSCMx.m == 4 && CSCMx.n == 4 && CSCMx.colptr[0] == 0 && CSCMx.colptr[3] == 4 && 
 		CSCMx.rowval[0] == 1 && CSCMx.rowval[3] == 2 && CSCMx.nzval[0] == 5 && CSCMx.nzval[2] == 6);
@@ -93,18 +83,18 @@ void IJVtests() {
 	CSCMx.nzval= 5 8 6 3
 	*/
 
-	cout << endl << "\nTest toCompressedMatrix():\n";
+	//cout << endl << "\nTest toCompressedMatrix():\n";
 	CompressedMatrix<int, blaze::columnMajor> mxtest;
 
 	mxtest = CSCMx.toCompressedMatrix();
-	cout << mxtest;
+	//cout << mxtest;
 
 	assert(m == mxtest);
 			
-	cout << endl << "Convert from blaze compressed matrix to IJV structure.\n\n";
+	//cout << endl << "Convert from blaze compressed matrix to IJV structure.\n\n";
 	IJV<int> ijv0(m);
 
-	dump_ijv(0, ijv0);
+	//dump_ijv(0, ijv0);
 
 	assert(ijv0.n == 4 && ijv0.nnz == 4 && ijv0.i[0] == 1 && ijv0.i[2] == 3 && ijv0.j[0] == 0 && ijv0.j[3] == 2 &&
 		ijv0.v[0] == 5 && ijv0.v[2] == 6);
@@ -117,9 +107,9 @@ void IJVtests() {
 		ijv0.v= 5 8 6 3
 	*/
 
-	cout << endl << "Convert from Julia SparseMatrixCSC to IJV structure.\n\n";
+	//cout << endl << "Convert from Julia SparseMatrixCSC to IJV structure.\n\n";
 	IJV<int> ijv10(CSCMx);
-	dump_ijv(10, ijv10);
+	//dump_ijv(10, ijv10);
 
 	assert(ijv0 == ijv10);
 
@@ -131,13 +121,13 @@ void IJVtests() {
 		ijv10.v= 5 8 6 3
 	*/
 
-	cout << "\n";
+	//cout << "\n";
 
-	cout << "\nTest sparse function.\n\n";
+	//cout << "\nTest sparse function.\n\n";
 	SparseMatrixCSC<int> CSCMx1;
 
 	CSCMx1 = sparseCSC(ijv0);
-
+	/*
 	cout << "\nCSC sparse matrix dump:\n";
 	cout << "CSCMx1.m=" << CSCMx1.m << endl;
 	cout << "CSCMx1.n=" << CSCMx1.n << endl;
@@ -154,6 +144,8 @@ void IJVtests() {
 	for (size_t k = 0; k < CSCMx1.nzval.size(); ++k)
 		cout << CSCMx1.nzval[k] << " ";
 
+		*/
+
 	assert(CSCMx == CSCMx1);
 
 	/* for column major (default) matrix:
@@ -164,18 +156,18 @@ void IJVtests() {
 	 CSCMx1.nzval.v= 5 8 6 3
 	 */
 	
-	cout << endl;
+	//cout << endl;
 
-	cout << "Test overloaded operators.\n";
+	//cout << "Test overloaded operators.\n";
 
 	IJV<int> ijv1 = ijv0;
 
-	cout << "\noperator= :\n";
+	//cout << "\noperator= :\n";
 
-	dump_ijv(1, ijv1);
+	//dump_ijv(1, ijv1);
 
 	bool t = ijv1 == ijv0;
-	cout << "\n\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
+	//cout << "\n\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
 
 	assert(ijv1 == ijv0);
 
@@ -183,74 +175,75 @@ void IJVtests() {
 	ijv1.v[0] = 10;
 
 	t = ijv1 == ijv0;
-	cout << "\n\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
+	//cout << "\n\noperator== :\n ijv1==ijv: " << (t ? "true" : "false");
 	assert(!(ijv1 == ijv0));
 
-	cout << "\n\noperator* :\n ijv * 5";
+	//cout << "\n\noperator* :\n ijv * 5";
 
 	ijv1 = ijv0*5;
 
-	cout << "\n" << "ijv1.v= ";
+/*	cout << "\n" << "ijv1.v= ";
 	for (size_t k = 0; k < ijv1.nnz; ++k)
 		cout << ijv1.v[k] << " ";
 
-	cout << "\n\noperator* :\n 5 * ijv";
+	cout << "\n\noperator* :\n 5 * ijv";*/
 
 	assert(ijv1.v[0] == 25 && ijv1.v[1] == 40);
 
 	ijv1 = 5 * ijv0;
 
+	/*
 	cout << "\n" << "ijv1.v= ";
 	for (size_t k = 0; k < ijv1.nnz; ++k)
 		cout << ijv1.v[k] << " ";
-
+	*/
 	assert(ijv1.v[0] == 25 && ijv1.v[1] == 40);
 
-	cout << "\n\nTest a constructor:\n";
+//	cout << "\n\nTest a constructor:\n";
 
 	IJV<int> ijv2(ijv0.n, ijv0.nnz, ijv0.i, ijv0.j, ijv0.v);
 
-	dump_ijv(2, ijv2);
+//	dump_ijv(2, ijv2);
 
 	assert(ijv2 == ijv0);
 
-	cout << "\n\nTest IJV::ToCompressMatrix():\n";
+//	cout << "\n\nTest IJV::ToCompressMatrix():\n";
 
 	CompressedMatrix<int, blaze::columnMajor> newm=ijv0.toCompressedMatrix();
-	cout << newm;
+//	cout << newm;
 
 	assert(newm == m);
 
 	size_t h1 = hashijv(ijv0);
 	size_t h2 = hashijv(ijv0, 5);
-	cout << "\n\nTest hash(IJV) function:\n";
+	/*cout << "\n\nTest hash(IJV) function:\n";
 	cout <<"hash(ijv): " << h1 << endl;
-	cout << "hash(ijv, 5): " << h2 << endl;
+	cout << "hash(ijv, 5): " << h2 << endl;*/
 
 	assert(h1 != h2);
 
-	cout << "\n\nTest compress(IJV) function:\n";
+	//cout << "\n\nTest compress(IJV) function:\n";
 
 	IJV<int>ijv3 = compress(ijv0);
 
-	dump_ijv(3, ijv3);
+	//dump_ijv(3, ijv3);
 
 	assert(ijv0 == ijv3);
 
-	cout << endl << "\nTranspose ijv:\n ";
+	//cout << endl << "\nTranspose ijv:\n ";
 	IJV<int> ijv4 = transpose(ijv0);
 
-	dump_ijv(4, ijv4);
+	//dump_ijv(4, ijv4);
 	assert(ijv4.i == ijv0.j && ijv4.j == ijv0.i && ijv4.v == ijv0.v);
 
-	cout << endl << ijv4.toCompressedMatrix()<<endl;
+	//cout << endl << ijv4.toCompressedMatrix()<<endl;
 
 //	cout << endl<<"Test a SparseMatrics constructor:\n";
 	SparseMatrixCSC<int> CSCMx2(CSCMx.m, CSCMx.n, CSCMx.colptr, CSCMx.rowval, CSCMx.nzval);
 
 	assert(CSCMx2 == CSCMx);
 
-	cout << "\nTest IJV constructor with Dynamic Vectors:\n";
+	//cout << "\nTest IJV constructor with Dynamic Vectors:\n";
 
 	DynamicVector<int> VV{ 5, 8, 6, 3 };
 	
@@ -258,7 +251,7 @@ void IJVtests() {
 
 	IJV<int> ijv5(4, 4, VI, VJ, VV);
 
-	dump_ijv(5, ijv5);
+	//dump_ijv(5, ijv5);
 
 	assert(ijv5 == ijv0);
 
@@ -445,14 +438,12 @@ void CollectionTest() {
 	bl = mxpair == pair<int, size_t>(5, 2);
 	assert(bl);
 
-	//Test pow()
 	CompressedMatrix<int, blaze::columnMajor> mx1{ {1,2}, {3,4} };
 	CompressedMatrix<int, blaze::columnMajor>powmx = pow(mx1, 2);
 
 	//cout << "\npow(M) = \n" << powmx;
 
 	/* Out:
-
 		7  10
 		15  22
 	*/
@@ -460,19 +451,16 @@ void CollectionTest() {
 	assert(powmx(0, 0) == 7 && powmx(0, 1) == 10 && powmx(1, 0) == 15 && powmx(1, 1) == 22);
 
 	//Test power():
-	CompressedMatrix<int, blaze::columnMajor>powmx1 = power(C, 2);
+	CompressedMatrix<int, blaze::columnMajor>powmx1 = power(mx1, 2);
 
 	//cout << "\npower(C, 2) = \n" << powmx1;
-
-	assert(powmx1(0, 1) == 245 && powmx1(1, 0) == 294);
-
-	/* Out:
-		  0  245   300  350
-		294     0  420  790
-		450   525    0  770
-		630  1185  924    0
 	
+	/* Out:
+		0  10
+		15  0
 	*/
+
+	assert(powmx1(0, 0) == 0 && powmx1(0, 1) == 10 && powmx1(1, 0) == 15 && powmx1(1, 1) == 0);
 
 	//Test kron()  for vectors
 
@@ -511,6 +499,27 @@ void CollectionFunctionTest() {
 			{0, 0, 0, 1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 0, 1, 0, 0, 0} };
 
 	//cout << endl << GrA;
+
+	/*SparseMatrixCSC<double> CSCMx(GrA);
+
+	cout << "Original blaze compressed matrix:\n" << GrA;
+
+	cout << "\nCSC sparse matrix dump:\n";
+	cout << "CSCMx.m=" << CSCMx.m << endl;
+	cout << "CSCMx.n=" << CSCMx.n << endl;
+
+	cout << "CSCMx.colptr= ";
+	for (size_t k = 0; k <= CSCMx.n; ++k)
+		cout << CSCMx.colptr[k] << " ";
+
+	cout << "\n" << "CSCMx.rowval= ";
+	for (size_t k = 0; k < CSCMx.nzval.size(); ++k)
+		cout << CSCMx.rowval[k] << " ";
+
+	cout << "\n" << "CSCMx.nzval= ";
+	for (size_t k = 0; k < CSCMx.nzval.size(); ++k)
+		cout << CSCMx.nzval[k] << " ";
+	*/
 
 	CompressedMatrix<int, blaze::columnMajor>
 		GrB{ {0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0, 0, 0},
@@ -599,7 +608,7 @@ void CollectionFunctionTest() {
 	DynamicVector<int> v11;
 	
 	v11 = index<int>(Midx08, { 0,1,2 }, 1);
-	cout << endl << v11 << endl;
+	//cout << endl << v11 << endl;
 	assert(v11[0] == 1 && v11[1] == 4 && v11[2] == 7);
 
 	v11 = index<int>(Midx08, 1, { 0, 1, 2 });
@@ -618,14 +627,14 @@ void CollectionFunctionTest() {
 
 	DynamicVector<int> vbool;
 	vbool = indexbool(v10, { 0, 0, 1, 0, 1 });
-	cout << endl << vbool << endl;
+	//cout << endl << vbool << endl;
 	
 	vector<size_t> vsz = indexbool({ 1, 2, 3, 4, 5 }, { 0, 0, 1, 0, 1 });
 
-	for (size_t i = 0; i < vsz.size(); i++)
+	/*for (size_t i = 0; i < vsz.size(); i++)
 		cout << vsz[i]<<" ";
 
-	cout << endl << endl;
+	cout << endl << endl;*/
 
 	//Test sparse function
 
@@ -635,10 +644,9 @@ void CollectionFunctionTest() {
 	vector<size_t> J1{ 0, 0, 1, 1, 1, 2, 3, 4, 5, 5, 5, 7, 7, 8, 8, 8 };
 	DynamicVector<int> V1{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
-	CompressedMatrix<int, blaze::columnMajor> sparseRes;
-	sparseRes = sparse(I1, J1, V1, 10, 10);
+	CompressedMatrix<int, blaze::columnMajor> sparseRes = sparse(I1, J1, V1, 10, 10);
 
-	cout << sparseRes << endl;
+	//cout << sparseRes << endl;
 
 	assert(sparseRes(1, 0) == 1 && sparseRes(1, 8) == 1 && sparseRes(7, 8)==1);
 	
@@ -928,6 +936,11 @@ void CollectionFunctionTest() {
 	//cout << col[i] << " ";
 
 	//cout << endl;
+
+	CompressedMatrix<double, blaze::columnMajor> grd2 = grid2<double>(2);
+	CompressedMatrix<double, blaze::columnMajor> p = power(grd2, 15);
+	//cout << p;
+
 }
 
 	

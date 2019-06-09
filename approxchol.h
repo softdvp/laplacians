@@ -41,22 +41,28 @@ namespace laplacians {
 		LLp* next;
 		LLp* reverse;
 
+		/*
+			LLp{Tind,Tval}() where {Tind,Tval} = (x = new(zero(Tind), zero(Tval)); x.next = x; x.reverse = x)
+			LLp{Tind,Tval}(row, val, next, rev) where {Tind,Tval} = new(row, val, next, rev)
+			LLp{Tind,Tval}(row, val) where {Tind,Tval} = (x = new(row, val); x.next = x; x.reverse = x)
+			LLp{Tind,Tval}(row, val, next) where {Tind,Tval} = (x = new(row, val, next); x.reverse = x)
+		*/
 		LLp() {
 			row = 0;
 			val = 0;
-			next = NULL;
-			reverse = NULL;
+			next = this;
+			reverse = this;
 		}
 
 		LLp(size_t Arow, Tv Aval, LLp* Anext, LLp* Areverse) :row(Arow), val(Aval), next(Anext), reverse(Areverse) {}
 
 		LLp(size_t Arow, Tv Aval) :row(Arow), val(Aval) {
-			next = NULL;
-			reverse = NULL;
+			next = this;
+			reverse = this;
 		}
 
 		LLp(size_t Arow, Tv Aval, LLp* Anext) :row(Arow), val(Aval), next(Anext) {
-			reverse = NULL;
+			reverse = this;
 		}
 	};
 
@@ -81,7 +87,7 @@ namespace laplacians {
 
 		LLmatp(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
 			SparseMatrixCSC<Tv> a(A);
-
+			
 			n = A.rows();
 			size_t m = A.nonZeros();
 
@@ -259,7 +265,7 @@ namespace laplacians {
 		vector<ApproxCholPQElem> elems; // indexed by node name
 		vector<size_t> lists;
 		size_t minlist;
-		size_t nitems; // never used ???
+		size_t nitems; 
 		size_t n;
 
 		ApproxCholPQ(vector<size_t> a) {
@@ -272,7 +278,7 @@ namespace laplacians {
 			for (size_t i = 0; i < n; i++)
 			{
 				size_t key = a[i];
-				size_t head = lists[key];
+				size_t head = lists[key-1];
 
 				if (head != SIZE_MAX)
 				{
@@ -282,9 +288,12 @@ namespace laplacians {
 				else
 					elems[i] = ApproxCholPQElem(SIZE_MAX, SIZE_MAX, key);
 
-				lists[key] = i;
+				lists[key-1] = i;
 
 			}
+			
+			// Assigned with a default constructor
+			nitems = n;
 		}
 
 		void move(size_t i, size_t newkey, size_t oldlist, size_t newlist);
@@ -296,24 +305,30 @@ namespace laplacians {
 	//The approximate factorization
 
 	template<typename Tv>
-	size_t get_ll_col(const LLmatp<Tv> &llmat, size_t i, vector<LLp<Tv>*> &colspace) {
+	size_t get_ll_col(const LLmatp<Tv>& llmat, size_t i, vector<LLp<Tv>*>& colspace) {
 
-		LLp<Tv>* ll = llmat.cols[i];
+		LLp<Tv>* ll = llmat.cols[i-1];
 		size_t len = 0;
 
-		while (ll->next) {
-			if (abs(ll->val) < 1e-6)
-				if (++len > colspace.size())
+		while (ll->next != ll) {
+			if (ll->val > 0) {
+				++len;
+
+				if (len > colspace.size())
 					colspace.push_back(ll);
 				else colspace[len - 1] = ll;
+			}
 
 			ll = ll->next;
 		}
 
-		if (abs(ll->val) < 1e-6)
-			if (++len > colspace.size())
+		if (ll->val > 0) {
+			++len;
+
+			if (len > colspace.size())
 				colspace.push_back(ll);
 			else colspace[len - 1] = ll;
+		}
 
 		return len;
 	}
@@ -321,19 +336,21 @@ namespace laplacians {
 	template<typename Tv>
 	size_t compressCol(vector<LLp<Tv>*> &colspace, size_t len, ApproxCholPQ &pq) {
 
-		sort(colspace.begin(), colspace.end(), [](auto x1, auto x2) { return x1->row < x2->row; });
+		sort(colspace.begin(), colspace.begin()+len, [](auto x1, auto x2) { return x1->row < x2->row; });
 
 		size_t ptr = 0;
-		size_t currow = 0;
+		size_t currow = SIZE_MAX;
 
 		vector<LLp<Tv>*> &c = colspace;
 
 		for (size_t i = 0; i < len; i++)
 		{
 			if (c[i]->row != currow) {
+
 				currow = c[i]->row;
 				c[ptr] = c[i];
 				ptr++;
+
 			}
 			else
 			{
@@ -352,7 +369,7 @@ namespace laplacians {
 	template<typename Tv>
 	size_t compressCol(vector<LLcol<Tv>> &colspace, size_t len)
 	{
-		sort(colspace.begin(), colspace.end(), [](auto x1, auto x2) {return x1.row < x2.row; });
+		sort(colspace.begin(), colspace.begin()+1, [](auto x1, auto x2) {return x1.row < x2.row; });
 
 		vector<LLcol<Tv>> &c = colspace;
 		size_t ptr = 0;
@@ -402,12 +419,12 @@ namespace laplacians {
 
 		vector<Tv> vals(n);
 
-		while (it < n - 1) {
-
+		while (it + 1 < n ) {
+			
 			size_t i = pq.pop();
 
-			ldli.col[it] = i;
-			ldli.colptr[i] = ldli_row_ptr;
+			ldli.col[it] = i-1;
+			ldli.colptr[it] = ldli_row_ptr;
 
 			it++;
 
@@ -428,7 +445,7 @@ namespace laplacians {
 
 			Random<double> rnd;
 
-			for (size_t joffset = 0; joffset < len - 1; joffset++)
+			for (size_t joffset = 0; joffset + 1 < len; joffset++)
 			{
 				LLp<Tv>* ll = colspace[joffset];
 				Tv w = vals[joffset] * colScale;
@@ -442,6 +459,7 @@ namespace laplacians {
 
 				Tv rand0_1 = rnd.rand0_1();
 				Tv r = rand0_1 * (csum - cumspace[joffset]) + cumspace[joffset];
+				//Tv r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset];
 
 				auto firstit = find_if(cumspace.begin(), cumspace.end(), [=](auto x) { return x > r; });
 
@@ -456,7 +474,7 @@ namespace laplacians {
 				Tv newEdgeVal = f * (1 - f)*wdeg;
 
 				//fix row k in col j
-				revj->row = k;	//dense time hog: presumably becaus of cache
+				revj->row = k;	//dense time hog: presumably because of cache
 				revj->val = newEdgeVal;
 				revj->reverse = ll;
 
@@ -478,8 +496,8 @@ namespace laplacians {
 
 			}
 
-			LLp<Tv>* ll = colspace[len];
-			Tv w = vals[len] * colScale;
+			LLp<Tv>* ll = colspace[len-1];
+			Tv w = vals[len-1] * colScale;
 			size_t j = ll->row;
 			LLp<Tv>* revj = ll->reverse;
 
@@ -492,7 +510,7 @@ namespace laplacians {
 			ldli.fval.push_back(1);
 			ldli_row_ptr++;
 
-			d[i] = w;
+			d[i-1] = w;
 		}
 
 		ldli.colptr[it] = ldli_row_ptr;
@@ -510,12 +528,12 @@ namespace laplacians {
 		{
 			size_t i = ldli.col[ii];
 
-			size_t j0 = ldli.col[ii];
+			size_t j0 = ldli.colptr[ii];
 			size_t j1 = ldli.colptr[ii + 1] - 1;
 
 			Tv yi = y[i];
 
-			for (size_t jj = j0; jj < j1 - 1; jj++)
+			for (size_t jj = j0; jj < j1; jj++)
 			{
 				size_t j = ldli.rowval[jj];
 				y[j] += ldli.fval[jj] * yi;
@@ -528,23 +546,50 @@ namespace laplacians {
 		}
 	}
 
+	/*
+	function backward!(ldli::LDLinv{Tind,Tval}, y::Vector) where {Tind,Tval}
+		o = one(Tind)
+		@inbounds for ii in length(ldli.col):-1:1
+			i = ldli.col[ii]
+
+			j0 = ldli.colptr[ii]
+			j1 = ldli.colptr[ii+1]-o
+
+			j = ldli.rowval[j1]
+			yi = y[i]
+			yi = yi + y[j]
+
+			for jj in (j1-o):-o:j0
+				j = ldli.rowval[jj]
+				yi = (one(Tval)-ldli.fval[jj])*yi + ldli.fval[jj]*y[j]
+			end
+			y[i] = yi
+		end
+	end
+
+	*/
+
 	template<typename Tv>
 	void backward(const LDLinv<Tv> &ldli, DynamicVector<Tv> &y) {
+		
+		size_t sz = ldli.col.size();
 
-		for (size_t ii = ldli.col.size() - 1; ii != SIZE_MAX; ii--)
+		for (size_t ii = 0; ii < sz; ++ii)
 		{
-			size_t i = ldli.col[ii];
+			size_t iib = sz - ii - 1;
+			size_t i = ldli.col[iib];
 
-			size_t j0 = ldli.colptr[ii];
-			size_t j1 = ldli.colptr[ii + 1] - 1;
+			size_t j0 = ldli.colptr[iib];
+			size_t j1 = ldli.colptr[iib + 1] - 1;
 
 			size_t j = ldli.rowval[j1];
 			Tv yi = y[i] + y[j];
 
-			for (size_t jj = j1 - 2; j >= j0 && j != SIZE_MAX; jj--)
+			for (size_t jj = j0; jj < j1; ++jj)
 			{
-				size_t j = ldli.rowval[jj];
-				yi = (1 - ldli.fval[jj])*yi + ldli.fval[jj] * y[j];
+				size_t jjb = j1 - jj - 1;
+				size_t j = ldli.rowval[jjb];
+				yi = (1 - ldli.fval[jjb])*yi + ldli.fval[jjb] * y[j];
 
 			}
 
@@ -578,7 +623,7 @@ namespace laplacians {
 		ApproxCholParams params = ApproxCholParams())
 	{
 		//auto t1 = high_resolution_clock::now();
-
+		
 		CompressedMatrix<Tv, blaze::columnMajor> la=lap(a);
 		LLmatp<Tv> llmat(a);
 		LDLinv <Tv> ldli = approxChol(llmat);
@@ -638,27 +683,20 @@ namespace laplacians {
 		// remove i from its old list
 
 		if (next != SIZE_MAX)
-		{
-			ApproxCholPQElem newpqel(prev, elems[next].next, elems[next].key);
-			elems[next] = newpqel;
-		}
+			elems[next] = ApproxCholPQElem(prev, elems[next].next, elems[next].key);
 
-		if (prev != SIZE_MAX) {
-			ApproxCholPQElem newpqel(elems[prev].prev, next, elems[prev].key);
-			elems[prev] = newpqel;
-		}
+		if (prev != SIZE_MAX) 
+			elems[prev] = ApproxCholPQElem(elems[prev].prev, next, elems[prev].key);
 		else
-			lists[oldlist] = next;
+			lists[oldlist-1] = next;
 
 		// insert i into its new list
-		size_t head = lists[newlist];
+		size_t head = lists[newlist-1];
 
-		if (head != SIZE_MAX) {
-			ApproxCholPQElem newpqel(i, elems[head].next, elems[head].key);
-			elems[head] = newpqel;
-		}
-
-		lists[newlist] = i;
+		if (head != SIZE_MAX) 
+			elems[head] = ApproxCholPQElem(i, elems[head].next, elems[head].key);
+		
+		lists[newlist-1] = i;
 		elems[i] = ApproxCholPQElem(SIZE_MAX, head, newkey);
 	}
 
@@ -693,7 +731,7 @@ namespace laplacians {
 
 		nitems--;
 
-		return i;
+		return i+1;
 	}
 
 	// Decrement the key of element i
@@ -711,9 +749,6 @@ namespace laplacians {
 				minlist = newlist;
 		}
 		else
-		{
-			ApproxCholPQElem newpqel(elems[i].prev, elems[i].next, elems[i].key - 1);
-			elems[i] = newpqel;
-		}
+			elems[i] = ApproxCholPQElem(elems[i].prev, elems[i].next, elems[i].key - 1);
 	}
 }

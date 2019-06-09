@@ -20,11 +20,11 @@ b=[5, 4, 0, 1]
 axpy2!(4, a, b)
 #println(b)
 
-"""
+
 m=[0 0 0 0; 5 8 0 0; 0 0 3 0; 0 6 0 0]
 
-sp_m=SparseMatrixCSC(m)
 
+"""
 ijv=IJV(sp_m)
 dump(ijv)
 
@@ -112,12 +112,11 @@ dg=sum(C, dims=1);
 
 dmatrix=diagmat(C)
 
-#println("diagmat(C)) = ", dmatrix)
+"""
+println("diagmat(C)) = ", dmatrix)
 println("power(C, 2) = ")
 display(Matrix(power(C, 2)))
 
-
-"""
 println("\n\nA matrix:")
 display(Matrix(A))
 
@@ -155,6 +154,10 @@ dump(IJ)
 GrA=[0 1 0 1 0 0 0 0 0; 1 0 1 0 1 0 0 0 0; 0 1 0 0 0 0 0 0 0;
 	 1 0 0 0 0 0 1 1 0; 0 1 0 0 0 1 0 0 0; 0 0 0 0 1 0 0 0 1;
 	 0 0 0 1 0 0 0 1 0; 0 0 0 1 0 0 1 0 0; 0 0 0 0 0 1 0 0 0]
+
+sp_m=SparseMatrixCSC(GrA)
+dump(sp_m)
+
 """
 GrB=[0 0 0 0 1 0 0 0 0; 0 0 1 1 0 0 0 0 0; 0 1 0 0 0 1 0 0 0;
 	 0 1 0 0 0 0 0 1 0; 1 0 0 0 0 1 1 0 0; 0 0 1 0 1 0 0 0 1;

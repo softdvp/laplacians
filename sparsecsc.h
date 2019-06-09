@@ -27,6 +27,7 @@ namespace laplacians {
 
 		//Convert from blaze::CompressedMatrix
 		SparseMatrixCSC(const CompressedMatrix<Tv, blaze::columnMajor> &mat) {
+			
 			m = mat.rows();
 			n = mat.columns();
 
@@ -48,13 +49,14 @@ namespace laplacians {
 			for (size_t l = 0UL; l < mat.rows(); ++l) {
 				std::size_t rownz = 0;
 
-				for (typename CompressedMatrix<Tv, blaze::columnMajor>::ConstIterator it = mat.cbegin(l); it != mat.cend(l); ++it) {
+				for (auto it = mat.cbegin(l); it != mat.cend(l); ++it) {
 
 					nzval[k] = it->value();
 					rowval[k] = it->index();
 					++k;
 					++rownz;
 				}
+
 				totalnz += rownz;
 				colptr[l + 1] = totalnz;
 			}

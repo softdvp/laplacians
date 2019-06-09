@@ -30,7 +30,8 @@ function sparsify(a; ep=0.3, matrixConcConst=4.0, JLfac=4.0)
 
   V = zeros(n,k)
   for i in 1:k
-    V[:,i] = f(UR[:,i])
+    b=UR[:,i]
+    V[:,i] = f(b)
   end
 
   (ai,aj,av) = findnz(triu(a))
@@ -38,6 +39,7 @@ function sparsify(a; ep=0.3, matrixConcConst=4.0, JLfac=4.0)
   for h in 1:length(av)
       i = ai[h]
       j = aj[h]
+
       prs[h] = min(1,av[h]* (norm(V[i,:]-V[j,:])^2/k) * matrixConcConst *log(n)/ep^2)
   end
 

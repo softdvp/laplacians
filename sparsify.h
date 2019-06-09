@@ -29,7 +29,7 @@ namespace laplacians {
 		Random<double> rnd;
 
 		vector<size_t> pcgIts;
-
+		
 		SolverB<Tv> f = approxchol_lap(a, pcgIts, 1e-2F);
 
 		size_t n = a.rows();
@@ -39,7 +39,7 @@ namespace laplacians {
 
 		size_t m = U.rows();
 
-		DynamicMatrix<double, blaze::columnMajor> R;
+		DynamicMatrix<double, blaze::columnMajor> R(m, k);
 
 		for (size_t i = 0; i < m; i++)
 			for (size_t j = 0; j < k; j++)
@@ -49,14 +49,15 @@ namespace laplacians {
 
 		CompressedMatrix<Tv, blaze::columnMajor> V(n, k, 0);
 
-		vector<size_t> idx = collect(0, V.rows());
-
 		for (size_t i = 0; i < k; i++) {
 			DynamicVector<Tv> x, b;
 
+			vector<size_t> idx = collect(0, UR.rows());
 			b = index(UR, idx, i);
+			
 			x = f(b);
 
+			idx = collect(0, V.rows());
 			index(V, idx, i, x);
 		}
 
@@ -68,6 +69,8 @@ namespace laplacians {
 			size_t j = aj[h];
 
 			DynamicVector<Tv>vi, vj;
+
+			vector<size_t> idx = collect(0, V.columns());
 			vi = index(V, i, idx);
 			vj = index(V, j, idx);
 			Tv nr = std::pow(norm(vi - vj), 2 / k);

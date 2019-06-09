@@ -49,6 +49,16 @@ namespace laplacians {
 		Random():gen(rd()){}
 	};
 
+	template <typename Tv>
+	CompressedMatrix<Tv, blaze::columnMajor> ClearDiag(const CompressedMatrix<Tv, blaze::columnMajor>& A) {
+		CompressedMatrix<Tv, blaze::columnMajor> res = A;
+
+		for (size_t i = 0; i < A.rows(); i++)
+			res(i, i) = 0;
+
+		return res;
+	}
+
 	template<typename Tv>
 	vector<size_t> flipIndex(const CompressedMatrix<Tv, blaze::columnMajor> &A) {
 
@@ -497,9 +507,10 @@ namespace laplacians {
 	template<typename Tv>
 	CompressedMatrix<Tv, blaze::columnMajor> power(const CompressedMatrix<Tv, blaze::columnMajor> &A, const int k) {
 		CompressedMatrix<Tv, blaze::columnMajor>ap;
-
+		
 		ap = pow(A, k);
-		ap = ap - Diagonal(diag(ap));
+		
+		ap = ClearDiag(ap);
 
 		return ap;
 	}
@@ -651,11 +662,11 @@ namespace laplacians {
 
 		if (blaze::min(a) < 0) {
 			af = blaze::abs(a);
-			af = af - Diagonal(diag(af));
+			af = ClearDiag(af);
 		}
 		else
 			if (blaze::sum(blaze::abs(diag(a))) > 0) {
-				af = a - Diagonal(diag(a));
+				af = ClearDiag(a);
 			}
 			else {
 				af = a;

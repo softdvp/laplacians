@@ -248,7 +248,7 @@ namespace laplacians {
 		auto t1 = high_resolution_clock::now();
 
 		if (!testZeroDiag(a)) {
-			//			a = a - Diagonal(diag(a));
+			//a = ClearDiag(a);
 		}
 
 		vector<size_t> co = components(a);

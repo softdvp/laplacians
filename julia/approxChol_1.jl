@@ -177,7 +177,7 @@ function LLmatp(a::SparseMatrixCSC{Tval,Tind}) where {Tind,Tval}
     degs = zeros(Tind,n)
 
     flips = flipIndex(a)
-    
+
     cols = Array{LLp{Tind,Tval}}(undef, n)
     llelems = Array{LLp{Tind,Tval}}(undef, m)
 
@@ -294,7 +294,6 @@ function compressCol!(a::LLmatp{Tind,Tval},
         end
     end
 
-
     o = Base.Order.ord(isless, x->x.val, false, Base.Order.Forward)
     sort!(colspace, 1, ptr, QuickSort, o)
 
@@ -350,8 +349,10 @@ end
 
 # this one is greedy on the degree - also a big win
 function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
+
     n = a.n
     ldli = LDLinv(a)
+
     ldli_row_ptr = one(Tind)
 
     d = zeros(n)
@@ -367,7 +368,6 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
     o = Base.Order.ord(isless, identity, false, Base.Order.Forward)
 
     @inbounds while it < n
-
         i = approxCholPQPop!(pq)
 
         ldli.col[it] = i # conversion!
@@ -402,6 +402,7 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
 
             # kind = Laplacians.blockSample(vals,k=1)[1]
             r = rand() * (csum - cumspace[joffset]) + cumspace[joffset]
+            #r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset]
             koff = searchsortedfirst(cumspace,r,one(len),len,o)
 
             k = colspace[koff].row
@@ -760,6 +761,7 @@ function ApproxCholPQ(a::Vector{Tind}) where Tind
         lists[key] = i
     end
 
+    # nitems is assigned here with the default constructor
     return ApproxCholPQ(elems, lists, minlist, n, n)
 end
 
@@ -772,6 +774,7 @@ function approxCholPQPop!(pq::ApproxCholPQ{Tind}) where Tind
     end
     i = pq.lists[pq.minlist]
     next = pq.elems[i].next
+
 
 
     pq.lists[pq.minlist] = next
