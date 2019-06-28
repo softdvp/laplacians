@@ -25,7 +25,7 @@ include("collection.jl")
 include("approxChol_1.jl")
 include("sparsify.jl")
 
-G = grid2(100)
+G = grid2(5)
 
 n = size(G,1)
 d_ave = nnz(G)/n
@@ -34,9 +34,9 @@ Gp = power(G,15)
 
 nnz(Gp)/n
 
-Gsparse = sparsify(Gp, ep=0.1)
+Gsparse = sparsify(Gp, ep=1)
 println("Average degree of sparsifier: ",nnz(Gsparse)/n)
-
+exit()
 #println("Approximation quality: ", approxQual(Gp, Gsparse))
 #=
 =#

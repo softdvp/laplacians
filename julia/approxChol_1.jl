@@ -23,6 +23,25 @@ mutable struct LLp{Tind,Tval}
     LLp{Tind,Tval}(row, val, next) where {Tind,Tval} = (x = new(row, val, next); x.reverse = x)
 end
 
+function debugLLp(colspace::Vector{LLp{Tind,Tval}}, len) where {Tind,Tval}
+    for i in 1:len
+        print("row= ", colspace[i].row, " ")
+    end
+    println()
+
+    for i in 1:len
+        print("reverse.row= ", colspace[i].reverse.row, " ")
+    end
+    println()
+
+    for i in 1:len
+        print("next.row= ", colspace[i].next.row, " ")
+    end
+    println()
+
+    return nothing
+end
+
 """
   LLmatp is the data structure used to maintain the matrix during elimination.
   It stores the elements in each column in a singly linked list (only next ptrs)
@@ -213,10 +232,15 @@ end
 function print_ll_col(llmat::LLmatp, i::Int)
     ll = llmat.cols[i]
     println("col $i, row $(ll.row) : $(ll.val)")
+    println("col $i, reverse.row= $(ll.reverse.row)")
+    println("col $i, next.row= $(ll.next.row)")
 
     while ll.next != ll
         ll = ll.next
         println("col $i, row $(ll.row) : $(ll.val)")
+        println("col $i, reverse.row= $(ll.reverse.row)")
+        println("col $i, next.row= $(ll.next.row)")
+
     end
 end
 
@@ -268,11 +292,16 @@ end
 function compressCol!(a::LLmatp{Tind,Tval},
   colspace::Vector{LLp{Tind,Tval}},
   len::Int,
-  pq::ApproxCholPQ{Tind}) where {Tind,Tval}
+  pq::ApproxCholPQ{Tind}, dbg=false) where {Tind,Tval}
 
     o = Base.Order.ord(isless, x->x.row, false, Base.Order.Forward)
 
     sort!(colspace, 1, len, QuickSort, o)
+
+    if dbg
+        println("!!!!!!!!!!!!!!!!!!!!")
+        debugLLp(colspace, len)
+    end
 
     ptr = 0
     currow::Tind = 0
@@ -286,16 +315,27 @@ function compressCol!(a::LLmatp{Tind,Tval},
             ptr = ptr+1
             c[ptr] = c[i]
 
+            if dbg
+                println("i=", i," currow=", currow , " ptr=", ptr, " c[ptr].row=", c[ptr].row)
+            end
         else
             c[ptr].val = c[ptr].val + c[i].val
             c[i].reverse.val = zero(Tval)
 
             approxCholPQDec!(pq, currow)
+            if dbg
+                println("i=", i, " ptr=", ptr, " c[ptr].val=", c[ptr].val)
+            end
         end
     end
 
     o = Base.Order.ord(isless, x->x.val, false, Base.Order.Forward)
     sort!(colspace, 1, ptr, QuickSort, o)
+
+    if dbg
+        println("@@@@@@@@@@@@@@@@@@@@")
+        debugLLp(colspace, len)
+    end
 
     return ptr
 end
@@ -350,6 +390,7 @@ end
 # this one is greedy on the degree - also a big win
 function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
 
+
     n = a.n
     ldli = LDLinv(a)
 
@@ -366,8 +407,10 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
     vals = Array{Tval}(undef, n) # will be able to delete this
 
     o = Base.Order.ord(isless, identity, false, Base.Order.Forward)
+    len=0
 
     @inbounds while it < n
+
         i = approxCholPQPop!(pq)
 
         ldli.col[it] = i # conversion!
@@ -375,9 +418,11 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
 
         it = it + 1
 
+
         len = get_ll_col(a, i, colspace)
 
-        len = compressCol!(a, colspace, len, pq)  #3hog
+
+        len = compressCol!(a, colspace, len, pq)
 
         csum = zero(Tval)
         for ii in 1:len
@@ -394,6 +439,7 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
             ll = colspace[joffset]
             w = vals[joffset] * colScale
             j = ll.row
+
             revj = ll.reverse
 
             f = w/(wdeg)
@@ -401,13 +447,15 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
             vals[joffset] = zero(Tval)
 
             # kind = Laplacians.blockSample(vals,k=1)[1]
-            r = rand() * (csum - cumspace[joffset]) + cumspace[joffset]
-            #r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset]
+            #r = rand() * (csum - cumspace[joffset]) + cumspace[joffset]
+            r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset]
             koff = searchsortedfirst(cumspace,r,one(len),len,o)
 
             k = colspace[koff].row
 
+
             approxCholPQInc!(pq, k)
+
 
             newEdgeVal = f*(one(Tval)-f)*wdeg
 
@@ -437,11 +485,15 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
 
         end # for
 
-
         ll = colspace[len]
         w = vals[len] * colScale
         j = ll.row
         revj = ll.reverse
+
+        if it== 7
+			println("j=", j, " len=", len)
+        end
+
 
         if it < n
             approxCholPQDec!(pq, j)
@@ -455,11 +507,15 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
 
         d[i] = w
 
+        #=println("=========================\n", "it=", it)
+        debugLLp(colspace, len);=#
+
     end
 
     ldli.colptr[it] = ldli_row_ptr
 
     ldli.d = d
+
 
     return ldli
 end
@@ -852,10 +908,35 @@ function approxCholPQInc!(pq::ApproxCholPQ{Tind}, i) where Tind
     if newlist != oldlist
 
         approxCholPQMove!(pq, i, pq.elems[i].key + one(Tind), oldlist, newlist)
+        #println("====approxCholPQMove======")
 
     else
+        #println("=====ApproxCholPQElem=======")
         pq.elems[i] = ApproxCholPQElem{Tind}(pq.elems[i].prev, pq.elems[i].next, pq.elems[i].key + one(Tind))
     end
 
+    #exit();
+
+    return nothing
+end
+
+function approxCholPQDebug(pq::ApproxCholPQ{Tind}) where Tind
+
+#=    println("\nelems")
+
+	for i in 1:length(pq.elems)
+		println("prev= ", pq.elems[i].prev, " next= ", pq.elems[i].next , " key= ",  pq.elems[i].key)
+	end
+
+	println("\nlists")=#
+
+	for i in 1:length(pq.lists)
+		print(pq.lists[i], " ")
+    end
+
+    println("\n");
+
+#=	println("minlist= ", pq.minlist, " nitems= ", pq.nitems, " n= ", pq.n, "\n");
+=#
     return nothing
 end

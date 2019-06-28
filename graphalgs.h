@@ -636,7 +636,7 @@ namespace laplacians {
 	}
 
 	inline size_t keyMap(size_t x, size_t n) {
-		return x <= n ? n : n + x / n;
+		return x <= n ? x : n + x / n;
 	}
 
 
