@@ -7,6 +7,7 @@
 #include "solvertypes.h"
 #include "approxchol.h"
 #include "graphalgs.h"
+#include "crandom.h"
 
 using namespace std;
 using blaze::CompressedMatrix;
@@ -20,6 +21,16 @@ using blaze::DynamicVector;
 	Apply Spielman-Srivastava sparsification: sampling by effective resistances.
 	`ep` should be less than 1.
 */
+
+/*for (size_t i = 0; i < as.rows(); i++) {
+	for (size_t j = 0; j < as.columns(); j++)
+	{
+		cout << left << setw(6) << as(i, j);
+	}
+
+	cout << endl;
+}*/
+
 
 namespace laplacians {
 	template<typename Tv>
@@ -37,15 +48,26 @@ namespace laplacians {
 
 		CompressedMatrix<Tv, blaze::columnMajor> U = wtedEdgeVertexMat(a);
 
+		/*for (size_t i = 0; i < U.rows(); i++) {
+			for (size_t j = 0; j < U.columns(); j++)
+			{
+				cout << left << setw(6) << U(i, j);
+			}
+
+			cout << endl;
+		}*/
+
 		size_t m = U.rows();
 
 		DynamicMatrix<double, blaze::columnMajor> R(m, k);
 
 		for (size_t i = 0; i < m; i++)
 			for (size_t j = 0; j < k; j++)
-				R(i, j) = rnd.randn();
+				R(i, j) = crandn();
 
 		CompressedMatrix<Tv, blaze::columnMajor> UR = adjoint(U) * R;
+
+		
 
 		CompressedMatrix<Tv, blaze::columnMajor> V(n, k, 0);
 
@@ -62,25 +84,31 @@ namespace laplacians {
 		}
 
 		auto [ai, aj, av] = findnz(triu(a));
+
 		DynamicVector<Tv> prs(av.size());
 		for (size_t h = 0; h < av.size(); h++)
 		{
 			size_t i = ai[h];
 			size_t j = aj[h];
 
-			DynamicVector<Tv>vi, vj;
+			DynamicVector<Tv>vi, vj, vr;
 
 			vector<size_t> idx = collect(0, V.columns());
 			vi = index(V, i, idx);
 			vj = index(V, j, idx);
-			Tv nr = std::pow(norm(vi - vj), 2 / k);
+			Tv nr = std::pow(norm(vi - vj), 2)/ k;
 			Tv tmp = av[h] * nr * matrixConcConst * log(n) / std::pow(ep, 2);
 			prs[h] = (1 < tmp) ? 1 : tmp;
 		}
 
 		vector<bool>ind(prs.size());
-		DynamicVector<double> rndvec = rnd.randv(prs.size());
+		//DynamicVector<double> rndvec = rnd.randv(prs.size());
 
+		DynamicVector<double> rndvec(prs.size());
+
+		for (size_t i = 0; i < rndvec.size(); i++)
+			rndvec[i] = crand01();
+		
 		for (size_t i = 0; i < prs.size(); i++)
 			ind[i] = rndvec[i] < prs[i];
 

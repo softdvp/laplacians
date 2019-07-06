@@ -238,7 +238,37 @@ namespace laplacians {
 		LDLinv(LLMatOrd<Tv> A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
 
 		LDLinv(LLmatp<Tv> A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
+
+		void debug() const {
+			cout << "\ncol=";
+			for (size_t i = 0; i < col.size(); i++)
+				cout << col[i]+1 << " ";
+			cout << endl;
+
+			cout << "\ncolptr=";
+			for (size_t i = 0; i < colptr.size(); i++)
+				cout << colptr[i] + 1 << " ";
+			cout << endl;
+
+			cout << "\nrowval=";
+			for (size_t i = 0; i < rowval.size(); i++)
+				cout << rowval[i] + 1 << " ";
+			cout << endl;
+
+			cout << "\nfval=";
+			for (size_t i = 0; i < fval.size(); i++)
+				cout << fval[i] << " ";
+			cout << endl;
+
+			cout.precision(8);
+			cout << "\nd=";
+			for (size_t i = 0; i < d.size(); i++)
+				cout << d[i] << " ";
+			cout << endl;
+		}
 	};
+
+	
 
 	/*
 	ApproxCholPQ
@@ -366,6 +396,13 @@ namespace laplacians {
 			cout << "row= " << colspace[i]->row+1 << " ";
 		}
 		cout << endl;
+
+		for (size_t i = 0; i < len; i++)
+		{
+			cout << "val= " << colspace[i]->val << " ";
+		}
+		cout << endl;
+
 
 		for (size_t i = 0; i < len; i++)
 		{
@@ -572,14 +609,12 @@ namespace laplacians {
 
 			d[i-1] = w;
 
-			/*cout << "=========================\n" << "it=" << it + 1 << endl;
-			debugLLp(colspace, len);*/
-			
-
 		}
 
 		ldli.colptr[it] = ldli_row_ptr;
 		ldli.d = d;
+
+		//ldli.debug();
 		
 		return ldli;
 
@@ -597,7 +632,10 @@ namespace laplacians {
 			size_t j1 = ldli.colptr[ii + 1] - 1;
 
 			Tv yi = y[i];
-
+			
+			//cout << "\nii=" << ii+1 <<"======="<< endl;
+			//cout << "\ni= " << i+1 << " j0= " << j0+1 << " j1= " << j1+1 << endl;
+			
 			for (size_t jj = j0; jj < j1; jj++)
 			{
 				size_t j = ldli.rowval[jj];
@@ -618,6 +656,7 @@ namespace laplacians {
 
 		for (size_t ii = 0; ii < sz; ++ii)
 		{
+			
 			size_t iib = sz - ii - 1;
 			size_t i = ldli.col[iib];
 
@@ -627,23 +666,30 @@ namespace laplacians {
 			size_t j = ldli.rowval[j1];
 			Tv yi = y[i] + y[j];
 
-			for (size_t jj = j0; jj < j1; ++jj)
+			
+
+			for (size_t jj = 0; jj < j1-j0; jj++)
 			{
 				size_t jjb = j1 - jj - 1;
+				
 				size_t j = ldli.rowval[jjb];
 				yi = (1 - ldli.fval[jjb])*yi + ldli.fval[jjb] * y[j];
-
+				
 			}
 
 			y[i] = yi;
+
 		}
 	}
 
 	template<typename Tv>
-	DynamicVector<Tv> LDLsolver(const LDLinv<Tv> &ldli, const DynamicVector<Tv> &b) {
+	DynamicVector<Tv> LDLsolver(const LDLinv<Tv> &ldli,  const DynamicVector<Tv> &b) {
 
 		DynamicVector<Tv> y = b;
+		
+		
 		forward(ldli, y);
+		
 
 		for (size_t i = 0; i < ldli.d.size(); i++)
 			if (abs(ldli.d[i]) > 1e-6)
@@ -656,6 +702,8 @@ namespace laplacians {
 		for (size_t i = 0; i < y.size(); i++)
 			y[i] = y[i]-mu;
 
+		
+		//cout << "\n\ny=" << y;
 		return y;
 	}
 
@@ -675,11 +723,15 @@ namespace laplacians {
 		};
 
 		return SubSolver<Tv>([=](const DynamicVector<Tv>& b, vector<size_t>& pcgIts) {
+			//cout << "b=" << b;
+
 			Tv mn = mean(b);
 			DynamicVector<Tv> b1(b.size());
 			
 			for (size_t i = 0; i < b.size(); i++)
 				b1[i]= b[i] - mn;
+
+			//cout << "b1=" << b1;
 
 			DynamicVector<Tv> res = pcg(la, b1, F, pcgIts, tol, maxits, maxtime, verbose, params.stag_test);
 			return res;

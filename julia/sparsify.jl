@@ -1,3 +1,4 @@
+include("crandom.jl")
 #=
 
 Code for Sparsification.
@@ -24,8 +25,18 @@ function sparsify(a; ep=0.3, matrixConcConst=4.0, JLfac=4.0)
   k = round(Int, JLfac*log(n)) # number of dims for JL
 
   U = wtedEdgeVertexMat(a)
+
   m = size(U,1)
-  R = randn(Float64, m,k)
+  #R = randn(Float64, m,k)
+
+  R=Array{Float64,2}(undef, m, k)
+
+  for i in 1:m
+    for j in 1:k
+      R[i,j]=crandn()
+    end
+  end
+
   UR = U'*R;
 
   V = zeros(n,k)
@@ -35,6 +46,7 @@ function sparsify(a; ep=0.3, matrixConcConst=4.0, JLfac=4.0)
   end
 
   (ai,aj,av) = findnz(triu(a))
+
   prs = zeros(size(av))
   for h in 1:length(av)
       i = ai[h]
@@ -43,10 +55,20 @@ function sparsify(a; ep=0.3, matrixConcConst=4.0, JLfac=4.0)
       prs[h] = min(1,av[h]* (norm(V[i,:]-V[j,:])^2/k) * matrixConcConst *log(n)/ep^2)
   end
 
-  ind = rand(Float64,size(prs)) .< prs
+  rnd=Array{Float64, 1}(undef, size(prs))
+
+  for i in 1:length(prs)
+    rnd[i]=crand01()
+  end
+
+  ind= rnd .<prs
+
+  #ind = rand(Float64,size(prs)) .< prs
 
   as = sparse(ai[ind],aj[ind],av[ind]./prs[ind],n,n)
+
   as = as + as'
+
 
   return as
 

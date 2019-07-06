@@ -12,7 +12,7 @@ using blaze::CompressedMatrix;
 
 void sparsification_test() {
 
-	CompressedMatrix<double, blaze::columnMajor> G = grid2<double>(5);
+	CompressedMatrix<double, blaze::columnMajor> G = grid2<double>(10);
 	
 	size_t n = G.rows();
 	cout << "Dimension= " << n << endl;

@@ -1,4 +1,4 @@
-#=
+    #=
   Structs for the approxChol solver
 =#
 
@@ -28,6 +28,12 @@ function debugLLp(colspace::Vector{LLp{Tind,Tval}}, len) where {Tind,Tval}
         print("row= ", colspace[i].row, " ")
     end
     println()
+
+    for i in 1:len
+        print("val= ", colspace[i].val, " ")
+    end
+    println()
+
 
     for i in 1:len
         print("reverse.row= ", colspace[i].reverse.row, " ")
@@ -95,6 +101,41 @@ mutable struct LDLinv{Tind,Tval}
     rowval::Array{Tind,1}
     fval::Array{Tval,1}
     d::Array{Tval,1}
+end
+
+function debugLDLinv(ldli::LDLinv{Tind,Tval}) where {Tind,Tval}
+    print("col=")
+    for i in 1:length(ldli.col)
+        print(ldli.col[i], " ")
+    end
+    println("\n")
+
+    print("colprt=")
+    for i in 1:length(ldli.colptr)
+        print(ldli.colptr[i], " ")
+    end
+    println("\n")
+
+    print("rowval=")
+    for i in 1:length(ldli.rowval)
+        print(ldli.rowval[i], " ")
+    end
+    println("\n")
+
+    print("fval=")
+    for i in 1:length(ldli.fval)
+        print(ldli.fval[i], " ")
+    end
+    println("\n")
+
+    print("d=")
+    for i in 1:length(ldli.d)
+        print(ldli.d[i], " ")
+    end
+    println("\n")
+
+    return nothing
+
 end
 
 #=============================================================
@@ -187,6 +228,8 @@ LDLinv(a::LLMatOrd{Tind,Tval}) where {Tind,Tval} =
 
 LDLinv(a::LLmatp{Tind,Tval}) where {Tind,Tval} =
   LDLinv(zeros(Tind,a.n-1), zeros(Tind,a.n),Tind[],Tval[],zeros(Tval,a.n))
+
+
 
 
 function LLmatp(a::SparseMatrixCSC{Tval,Tind}) where {Tind,Tval}
@@ -292,16 +335,11 @@ end
 function compressCol!(a::LLmatp{Tind,Tval},
   colspace::Vector{LLp{Tind,Tval}},
   len::Int,
-  pq::ApproxCholPQ{Tind}, dbg=false) where {Tind,Tval}
+  pq::ApproxCholPQ{Tind}) where {Tind,Tval}
 
     o = Base.Order.ord(isless, x->x.row, false, Base.Order.Forward)
 
     sort!(colspace, 1, len, QuickSort, o)
-
-    if dbg
-        println("!!!!!!!!!!!!!!!!!!!!")
-        debugLLp(colspace, len)
-    end
 
     ptr = 0
     currow::Tind = 0
@@ -315,27 +353,16 @@ function compressCol!(a::LLmatp{Tind,Tval},
             ptr = ptr+1
             c[ptr] = c[i]
 
-            if dbg
-                println("i=", i," currow=", currow , " ptr=", ptr, " c[ptr].row=", c[ptr].row)
-            end
         else
             c[ptr].val = c[ptr].val + c[i].val
             c[i].reverse.val = zero(Tval)
 
             approxCholPQDec!(pq, currow)
-            if dbg
-                println("i=", i, " ptr=", ptr, " c[ptr].val=", c[ptr].val)
-            end
         end
     end
 
     o = Base.Order.ord(isless, x->x.val, false, Base.Order.Forward)
     sort!(colspace, 1, ptr, QuickSort, o)
-
-    if dbg
-        println("@@@@@@@@@@@@@@@@@@@@")
-        debugLLp(colspace, len)
-    end
 
     return ptr
 end
@@ -389,7 +416,6 @@ end
 
 # this one is greedy on the degree - also a big win
 function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
-
 
     n = a.n
     ldli = LDLinv(a)
@@ -490,11 +516,6 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
         j = ll.row
         revj = ll.reverse
 
-        if it== 7
-			println("j=", j, " len=", len)
-        end
-
-
         if it < n
             approxCholPQDec!(pq, j)
         end
@@ -507,16 +528,13 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
 
         d[i] = w
 
-        #=println("=========================\n", "it=", it)
-        debugLLp(colspace, len);=#
-
     end
 
     ldli.colptr[it] = ldli_row_ptr
 
     ldli.d = d
 
-
+    #debugLDLinv(ldli)
     return ldli
 end
 
@@ -529,6 +547,7 @@ The routines that do the solve.
 =============================================================#
 
 function LDLsolver(ldli::LDLinv, b::Vector)
+
     y = copy(b)
 
     forward!(ldli, y)
@@ -574,6 +593,7 @@ end
 function backward!(ldli::LDLinv{Tind,Tval}, y::Vector) where {Tind,Tval}
     o = one(Tind)
     @inbounds for ii in length(ldli.col):-1:1
+
         i = ldli.col[ii]
 
         j0 = ldli.colptr[ii]
@@ -650,7 +670,11 @@ function approxchol_lapGreedy(a::SparseMatrixCSC;
   ldli = approxChol(llmat)
   F(b) = LDLsolver(ldli, b)
 
-  f(b;tol=tol_,maxits=maxits_, maxtime=maxtime_, verbose=verbose_, pcgIts=pcgIts_) = pcg(la, b .- mean(b), F, tol=tol, maxits=maxits, maxtime=maxtime, pcgIts=pcgIts, verbose=verbose, stag_test = params.stag_test)
+  #b1.= b .- mean(b)
+
+  f=function(b;tol=tol_,maxits=maxits_, maxtime=maxtime_, verbose=verbose_, pcgIts=pcgIts_)
+      return pcg(la, b .- mean(b), F, tol=tol, maxits=maxits, maxtime=maxtime, pcgIts=pcgIts, verbose=verbose, stag_test = params.stag_test)
+  end
 
 end
 
