@@ -34,7 +34,7 @@ namespace laplacians {
 		}
 
 		Tv randn() {
-			return (rand0_1() - 0.5) * 6;
+			return rand0_1()*3.4 - 1.7;
 		}
 
 		DynamicVector<Tv> randv(size_t sz) {

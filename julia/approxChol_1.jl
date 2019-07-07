@@ -473,8 +473,8 @@ function approxChol(a::LLmatp{Tind,Tval}) where {Tind,Tval}
             vals[joffset] = zero(Tval)
 
             # kind = Laplacians.blockSample(vals,k=1)[1]
-            #r = rand() * (csum - cumspace[joffset]) + cumspace[joffset]
-            r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset]
+            r = rand() * (csum - cumspace[joffset]) + cumspace[joffset]
+            #r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset]
             koff = searchsortedfirst(cumspace,r,one(len),len,o)
 
             k = colspace[koff].row

@@ -366,7 +366,8 @@ namespace laplacians {
 		size_t len = 0;
 
 		while (ll->next != ll) {
-			if (ll->val > 1e-6) {
+			//if (ll->val > 1e-6) {
+			if (ll->val > 0) {
 				++len;
 
 				if (len > colspace.size())
@@ -377,7 +378,8 @@ namespace laplacians {
 			ll = ll->next;
 		}
 
-		if (ll->val > 1e-6) {
+		//if (ll->val > 1e-6) {
+		if (ll->val > 0) {
 			++len;
 
 			if (len > colspace.size())
@@ -550,8 +552,8 @@ namespace laplacians {
 				vals[joffset] = 0;
 
 				Tv rand0_1 = rnd.rand0_1();
-				//Tv r = rand0_1 * (csum - cumspace[joffset]) + cumspace[joffset];
-				Tv r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset];
+				Tv r = rand0_1 * (csum - cumspace[joffset]) + cumspace[joffset];
+				//Tv r = 0.2 * (csum - cumspace[joffset]) + cumspace[joffset];
 
 				auto firstit = find_if(cumspace.begin(), cumspace.begin()+len, [=](auto x) { return x > r; });
 
@@ -692,7 +694,8 @@ namespace laplacians {
 		
 
 		for (size_t i = 0; i < ldli.d.size(); i++)
-			if (abs(ldli.d[i]) > 1e-6)
+			//if (abs(ldli.d[i]) > 1e-6)
+			if (ldli.d[i]!=0)
 				y[i] /= ldli.d[i];
 
 		backward(ldli, y);

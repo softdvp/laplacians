@@ -48,26 +48,15 @@ namespace laplacians {
 
 		CompressedMatrix<Tv, blaze::columnMajor> U = wtedEdgeVertexMat(a);
 
-		/*for (size_t i = 0; i < U.rows(); i++) {
-			for (size_t j = 0; j < U.columns(); j++)
-			{
-				cout << left << setw(6) << U(i, j);
-			}
-
-			cout << endl;
-		}*/
-
 		size_t m = U.rows();
 
 		DynamicMatrix<double, blaze::columnMajor> R(m, k);
 
 		for (size_t i = 0; i < m; i++)
 			for (size_t j = 0; j < k; j++)
-				R(i, j) = crandn();
+				R(i, j) = rnd.randn();
 
 		CompressedMatrix<Tv, blaze::columnMajor> UR = adjoint(U) * R;
-
-		
 
 		CompressedMatrix<Tv, blaze::columnMajor> V(n, k, 0);
 
@@ -102,12 +91,12 @@ namespace laplacians {
 		}
 
 		vector<bool>ind(prs.size());
-		//DynamicVector<double> rndvec = rnd.randv(prs.size());
+		DynamicVector<double> rndvec = rnd.randv(prs.size());
 
-		DynamicVector<double> rndvec(prs.size());
+		/*DynamicVector<double> rndvec(prs.size());
 
 		for (size_t i = 0; i < rndvec.size(); i++)
-			rndvec[i] = crand01();
+			rndvec[i] = crand01();*/
 		
 		for (size_t i = 0; i < prs.size(); i++)
 			ind[i] = rndvec[i] < prs[i];

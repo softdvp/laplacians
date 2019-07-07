@@ -12,14 +12,14 @@ using blaze::CompressedMatrix;
 
 void sparsification_test() {
 
-	CompressedMatrix<double, blaze::columnMajor> G = grid2<double>(10);
+	CompressedMatrix<double, blaze::columnMajor> G = grid2<double>(40);
 	
-	size_t n = G.rows();
+	size_t n = G.rows(); 
 	cout << "Dimension= " << n << endl;
 	   
 	CompressedMatrix<double, blaze::columnMajor> Gp = power(G, 15);
 		
 	CompressedMatrix<double, blaze::columnMajor> Gsparse = sparsify(Gp, 1.0F);
-	
+	cout.precision(10);
 	cout << "Average degree of sparsifier: " << double(Gsparse.nonZeros()) / double(n);
 }
