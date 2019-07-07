@@ -1,6 +1,6 @@
-// Laplacians.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 
 #include <iostream>
 #include "tests.h"
@@ -17,6 +17,8 @@ int main()
 	CollectionFunctionTest();
 
 	sparsification_test();
+
+	_CrtDumpMemoryLeaks();
 
 }
 

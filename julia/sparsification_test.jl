@@ -25,7 +25,7 @@ include("collection.jl")
 include("approxChol_1.jl")
 include("sparsify.jl")
 
-G = grid2(40)
+G = grid2(60)
 
 n = size(G,1)
 d_ave = nnz(G)/n

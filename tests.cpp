@@ -908,7 +908,7 @@ void CollectionFunctionTest() {
 
 	//Test LLmatp constructor
 
-	CompressedMatrix<double, blaze::columnMajor>LMat{ {1, 2, 3}, {4, 5, 6 }, {7, 8, 9} };
+	/*CompressedMatrix<double, blaze::columnMajor>LMat{ {1, 2, 3}, {4, 5, 6 }, {7, 8, 9} };
 
 	LLmatp<double> llmatp(LMat);
 
@@ -917,6 +917,7 @@ void CollectionFunctionTest() {
 	LLp<double>* ll = llmatp.cols[0];
 
 	assert(round(ll->val) == 7 && round(ll->next->val) == 4 && round(ll->next->next->val) == 1);
+	*/
 
 	// Test random function
 	Random<double> rnd;

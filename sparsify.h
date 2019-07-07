@@ -22,15 +22,6 @@ using blaze::DynamicVector;
 	`ep` should be less than 1.
 */
 
-/*for (size_t i = 0; i < as.rows(); i++) {
-	for (size_t j = 0; j < as.columns(); j++)
-	{
-		cout << left << setw(6) << as(i, j);
-	}
-
-	cout << endl;
-}*/
-
 
 namespace laplacians {
 	template<typename Tv>

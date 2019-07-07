@@ -41,27 +41,21 @@ namespace laplacians {
 		LLp* next;
 		LLp* reverse;
 
-		/*
-			LLp{Tind,Tval}() where {Tind,Tval} = (x = new(zero(Tind), zero(Tval)); x.next = x; x.reverse = x)
-			LLp{Tind,Tval}(row, val, next, rev) where {Tind,Tval} = new(row, val, next, rev)
-			LLp{Tind,Tval}(row, val) where {Tind,Tval} = (x = new(row, val); x.next = x; x.reverse = x)
-			LLp{Tind,Tval}(row, val, next) where {Tind,Tval} = (x = new(row, val, next); x.reverse = x)
-		*/
-		LLp() {
+		/*LLp() {
 			row = 0;
 			val = 0;
 			next = this;
 			reverse = this;
-		}
+		}*/
 
-		LLp(size_t Arow, Tv Aval, LLp* Anext, LLp* Areverse) :row(Arow), val(Aval), next(Anext), reverse(Areverse) {}
+		LLp(const size_t Arow, const Tv Aval, const LLp* Anext, const LLp* Areverse) :row(Arow), val(Aval), next(Anext), reverse(Areverse) {}
 
-		LLp(size_t Arow, Tv Aval) :row(Arow), val(Aval) {
+		LLp(const size_t Arow, const Tv Aval) :row(Arow), val(Aval) {
 			next = this;
 			reverse = this;
 		}
 
-		LLp(size_t Arow, Tv Aval, LLp* Anext) :row(Arow), val(Aval), next(Anext) {
+		LLp(const size_t Arow, const Tv Aval, LLp* Anext) :row(Arow), val(Aval), next(Anext) {
 			reverse = this;
 		}
 	};
@@ -94,8 +88,8 @@ namespace laplacians {
 			degs.resize(n);
 			vector<size_t> flips = flipIndex(A);
 
-			cols.resize(n);
-			llelems.resize(m);
+			cols.resize(n, NULL);
+			llelems.resize(m, NULL);
 
 			for (size_t i = 0; i < n; i++)
 			{
@@ -123,50 +117,23 @@ namespace laplacians {
 			 
 		}
 
-		/*LLmatp(const SparseMatrixCSC<Tv>& a) {
-			
-			n = a.n;
-			size_t m = a.nnz;
+		~LLmatp() {
+			cout << "destructor LLmatp";
 
-			degs.resize(n);
-			vector<size_t> flips = flipIndex(a);
-
-			cols.resize(n);
-			llelems.resize(m);
-
-			for (size_t i = 0; i < n; i++)
+			for (size_t i = 0; i < llelems.size(); i++)
 			{
-				degs[i] = a.colptr[i + 1] - a.colptr[i];
-
-				size_t ind = a.colptr[i];
-				size_t j = a.rowval[ind];
-				Tv v = a.nzval[ind];
-				LLp<Tv>* llpend = new LLp<Tv>(j, v);
-				LLp<Tv>* next = llelems[ind] = llpend;
-
-				for (size_t ind = a.colptr[i] + 1; ind < a.colptr[i + 1]; ind++)
-				{
-					size_t j = a.rowval[ind];
-					Tv v = a.nzval[ind];
-					next = llelems[ind] = new LLp<Tv>(j, v, next);
-				}
-
-				cols[i] = next;
+				delete llelems[i];
 			}
 
-			for (size_t i = 0; i < n; i++)
-				for (size_t ind = a.colptr[i] + 1; ind < a.colptr[i + 1]; ind++)
-					llelems[ind]->reverse = llelems[flips[ind]];
 
-		}*/
-
+		}
 	};
 
 	//Print a column in an LLmatp matrix.
 	//This is here for diagnostics.
 
 	template <typename Tv>
-	void print_ll_col(LLmatp<Tv> llmat, size_t i) {
+	void print_ll_col(const LLmatp<Tv> &llmat, const size_t i) {
 
 		LLp<Tv>* ll = llmat.cols[i];
 
@@ -193,7 +160,7 @@ namespace laplacians {
 		size_t next;
 		Tv val;
 
-		LLord(size_t Arow, size_t Anext, Tv Aval) :row(Arow), next(Anext), val(Aval) {}
+		LLord(const size_t Arow, const size_t Anext, const Tv Aval) :row(Arow), next(Anext), val(Aval) {}
 	};
 
 	template<typename Tv>
@@ -211,7 +178,7 @@ namespace laplacians {
 		size_t ptr;
 		Tv val;
 
-		LLcol(size_t Arow, size_t Aptr, Tv Aval) :row(Arow), ptr(Aptr), val(Aval) {}
+		LLcol(const size_t Arow, const size_t Aptr, const Tv Aval) :row(Arow), ptr(Aptr), val(Aval) {}
 	};
 
 	// LDLinv
@@ -232,12 +199,12 @@ namespace laplacians {
 		vector<Tv> fval;
 		vector<Tv> d;
 
-		LDLinv(CompressedMatrix<Tv, blaze::columnMajor> A) : col(A.columns() - 1, 0), colptr(A.columns(), 0), 
+		LDLinv(const CompressedMatrix<Tv, blaze::columnMajor> &A) : col(A.columns() - 1, 0), colptr(A.columns(), 0), 
 			d(A.columns(), 0) /* rowval and fval are empty*/	{}
 
-		LDLinv(LLMatOrd<Tv> A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
+		LDLinv(const LLMatOrd<Tv> &A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
 
-		LDLinv(LLmatp<Tv> A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
+		LDLinv(const LLmatp<Tv> &A) : col(A.n - 1, 0), colptr(A.n, 0), d(A.n, 0) {}
 
 		void debug() const {
 			cout << "\ncol=";
@@ -283,7 +250,7 @@ namespace laplacians {
 		size_t key;
 
 		ApproxCholPQElem() {};
-		ApproxCholPQElem(size_t Aprev, size_t Anext, size_t Akey) :prev(Aprev), next(Anext), key(Akey) {}
+		ApproxCholPQElem(const size_t Aprev, const size_t Anext, const size_t Akey) :prev(Aprev), next(Anext), key(Akey) {}
 	};
 
 	/*
@@ -303,7 +270,7 @@ namespace laplacians {
 		size_t nitems; 
 		size_t n;
 
-		ApproxCholPQ(vector<size_t> a) {
+		ApproxCholPQ(const vector<size_t> &a) {
 
 			n = a.size();
 			elems.resize(n);
@@ -331,9 +298,9 @@ namespace laplacians {
 			nitems = n;
 		}
 
-		void move(size_t i, size_t newkey, size_t oldlist, size_t newlist);
-		void inc(size_t i);
-		void dec(size_t i);
+		void move(const size_t i, const size_t newkey, const size_t oldlist, const size_t newlist);
+		void inc(const size_t i);
+		void dec(const size_t i);
 		size_t pop();
 
 		void debug() {
@@ -391,7 +358,7 @@ namespace laplacians {
 	}
 
 	template<typename Tv>
-	void debugLLp(vector<LLp<Tv>*> colspace, size_t len) {
+	void debugLLp(const vector<LLp<Tv>*> &colspace, size_t len) {
 
 		for (size_t i = 0; i < len; i++)
 		{
@@ -489,7 +456,7 @@ namespace laplacians {
 
 	// this one is greedy on the degree - also a big win
 	template<typename Tv>
-	LDLinv<Tv> approxChol(LLmatp<Tv> a) {
+	LDLinv<Tv> approxChol(LLmatp<Tv> &a) {
 		
 		size_t n = a.n;
 		LDLinv ldli(a);
@@ -616,8 +583,6 @@ namespace laplacians {
 		ldli.colptr[it] = ldli_row_ptr;
 		ldli.d = d;
 
-		//ldli.debug();
-		
 		return ldli;
 
 	}
@@ -756,12 +721,6 @@ namespace laplacians {
 		double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false,
 		ApproxCholParams params = ApproxCholParams())
 	{
-		/*SolverA<Tv> f = SolverA<Tv>([=](const CompressedMatrix<Tv, blaze::columnMajor>& a, vector<size_t>& pcgIts, float tol = 1e-6,
-			double maxits = 1000, double maxtime = HUGE_VAL, bool verbose = false, ApproxCholParams params = ApproxCholParams())
-			{
-				return approxchol_lap1(a, pcgIts, tol, maxits, maxtime, verbose, params);
-			});*/
-
 
 		return lapWrapComponents(SolverA<Tv>(approxchol_lap1<Tv>), a, pcgIts, tol, maxits, maxtime, false);
 	}
